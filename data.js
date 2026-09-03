@@ -14,7 +14,7 @@ window.SITE_DATA = {
     "heroDesc": "This site showcases clinical research articles and findings. All content can be freely added and modified through the admin panel. Click the button in the bottom-right corner to start building.",
     "introTitle": "About This Site",
     "introBody": "This section is used to introduce the technology or website background. You can edit it in the admin panel under Settings, or leave it empty to hide this section entirely.",
-    "aboutText": "About this site: This text can be edited in the admin panel under Settings. It supports multiple lines. Leave empty to hide this section.",
+    "aboutText": "Contact us for more information, collaboration, or inquiries about the research featured on this site.",
     "footerText": "\u00a9 My Library \u00b7 Managed via Admin Panel",
     "contactEmail": "",
     "accent": "#1668dc",
