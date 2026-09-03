@@ -375,7 +375,7 @@ function editArticle(id){
   const a=id?D.articles.find(x=>x.id===id):{title:'',titleEn:'',authors:'',journal:'',year:'',doi:'',link:'',catId:(D.categories[0]||{}).id||'',tags:[],abstract:'',findings:[],cover:'',gallery:[],featured:false,visible:true};
   curGallery=normGal(a.gallery||[]);
   const catOpts=D.categories.map(c=>`<option value="${esc(c.id)}" ${c.id===a.catId?'selected':''}>${esc(c.name)}</option>`).join('');
-  const coverPrev=a.cover?`<img src="${esc(a.cover)}" style="width:120px;height:80px;object-fit:cover;border-radius:8px;margin-top:8px;border:1px solid var(--line);display:block">`:'';
+  const coverPrev=a.cover?`<img src="${esc(a.cover)}" style="max-width:200px;max-height:200px;width:auto;height:auto;object-fit:contain;border-radius:8px;margin-top:8px;border:1px solid var(--line);display:block">`:'';
   document.getElementById('editor-title').textContent=id?'Edit Article':'New Article';
   document.getElementById('editor-body').innerHTML=`
     <div class="field"><label>Title <span class="req">*</span></label><input type="text" id="f-title" value="${esc(a.title)}"></div>
@@ -399,8 +399,9 @@ function editArticle(id){
       <div class="row">
         <input type="url" id="f-cover" value="${esc(a.cover)}" placeholder="Image URL or click upload on the right" style="flex:1;min-width:200px">
         <label class="btn btn-soft btn-sm" style="cursor:pointer">Upload Image<input type="file" accept="image/*" style="display:none" onchange="uploadCover(event)"></label>
+        <button class="btn btn-danger btn-sm" onclick="clearCover()">Remove</button>
       </div>
-      <div class="help">Leave empty to use the default placeholder image.</div>
+      <div class="help">Leave empty to use the default placeholder image. Uploaded images are auto-compressed (max 1600px, JPEG 85%).</div>
       <div id="f-cover-prev">${coverPrev}</div>
     </div>
     <div class="field"><label>Article Images</label>
@@ -470,9 +471,13 @@ function uploadCover(e){
   const f=e.target.files[0];if(!f)return;
   compressImage(f,1600,0.85,function(data){
     document.getElementById('f-cover').value=data;
-    document.getElementById('f-cover-prev').innerHTML='<img src="'+data+'" style="width:120px;height:80px;object-fit:cover;border-radius:8px;margin-top:8px;border:1px solid var(--line);display:block">';
+    document.getElementById('f-cover-prev').innerHTML='<img src="'+data+'" style="max-width:200px;max-height:200px;width:auto;height:auto;object-fit:contain;border-radius:8px;margin-top:8px;border:1px solid var(--line);display:block">';
   });
   e.target.value='';
+}
+function clearCover(){
+  document.getElementById('f-cover').value='';
+  document.getElementById('f-cover-prev').innerHTML='';
 }
 function uploadGallery(e){
   var files=[].slice.call(e.target.files||[]);var done=0;
