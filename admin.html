@@ -180,10 +180,16 @@ const LS_KEY='site_data_v2';
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function clone(o){return JSON.parse(JSON.stringify(o));}
 function getDefault(){return window.SITE_DATA?clone(window.SITE_DATA):{settings:{},categories:[],articles:[]};}
-function getData(){try{const o=JSON.parse(localStorage.getItem(LS_KEY));if(o&&o.settings)return o;}catch(e){}return getDefault();}
+/* persistence: IndexedDB with localStorage fallback (handles large image data) */
+function idbOpen(){return new Promise(function(res,rej){var r=indexedDB.open('site_db',1);r.onupgradeneeded=function(){r.result.createObjectStore('kv');};r.onsuccess=function(){res(r.result);};r.onerror=function(){rej(r.error);};});}
+function idbGet(k){return new Promise(function(res,rej){idbOpen().then(function(db){var tx=db.transaction('kv','readonly');var rq=tx.objectStore('kv').get(k);rq.onsuccess=function(){res(rq.result);};rq.onerror=function(){rej(rq.error);};}).catch(rej);});}
+function idbPut(k,v){return new Promise(function(res,rej){idbOpen().then(function(db){var tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=function(){res();};tx.onerror=function(){rej(tx.error);};}).catch(rej);});}
+function idbDel(k){return new Promise(function(res,rej){idbOpen().then(function(db){var tx=db.transaction('kv','readwrite');tx.objectStore('kv').delete(k);tx.oncomplete=function(){res();};tx.onerror=function(){rej(tx.error);};}).catch(rej);});}
+function storeGet(){if(typeof indexedDB==='undefined'){try{var o=JSON.parse(localStorage.getItem(LS_KEY));if(o&&o.settings)return Promise.resolve(o);}catch(e){}return Promise.resolve(null);}return idbGet(LS_KEY).then(function(v){return v||null;}).catch(function(){return null;});}
+function storePut(val){if(typeof indexedDB==='undefined'){try{localStorage.setItem(LS_KEY,JSON.stringify(val));return Promise.resolve();}catch(e){return Promise.reject(e);}}return idbPut(LS_KEY,val).catch(function(){try{localStorage.setItem(LS_KEY,JSON.stringify(val));}catch(e){throw e;}});}
 function uid(p){return (p||'a')+Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
 
-let D=getData();
+let D=getDefault();
 let curTab='articles';
 let editingId=null;
 let curGallery=[];   // working gallery array for the current editor
@@ -195,8 +201,10 @@ function catName(id){const c=D.categories.find(x=>x.id===id);return c?c.name:'Un
 /* ---------- Login ---------- */
 function doLogin(){
   const v=document.getElementById('pw').value;
-  if(v===(D.settings.adminPassword||'admin888')){sessionStorage.setItem('admin_ok','1');enterApp();}
-  else toast('Wrong password');
+  storeGet().then(function(o){if(o&&o.settings)D=o;
+    if(v===(D.settings.adminPassword||'admin888')){sessionStorage.setItem('admin_ok','1');enterApp();}
+    else toast('Wrong password');
+  });
 }
 function logout(){sessionStorage.removeItem('admin_ok');location.reload();}
 function enterApp(){
@@ -207,7 +215,7 @@ function enterApp(){
   document.getElementById('b-dot').textContent=(D.settings.siteName||'U').charAt(0).toUpperCase();
   renderAll();
 }
-if(sessionStorage.getItem('admin_ok')==='1')enterApp();
+if(sessionStorage.getItem('admin_ok')==='1'){storeGet().then(function(o){if(o&&o.settings)D=o;enterApp();}).catch(function(){enterApp();});}
 
 /* ---------- Tabs ---------- */
 document.getElementById('tabs').addEventListener('click',e=>{
@@ -275,7 +283,7 @@ function renderSettings(){
         <label class="btn btn-soft btn-sm" style="cursor:pointer">Upload Image<input type="file" accept="image/*" style="display:none" onchange="uploadHeroImg(event)"></label>
         <button class="btn btn-danger btn-sm" onclick="clearHeroImg()">Remove</button>
       </div>
-      <div class="help">Optional. When set, this image replaces the hero color-gradient background (the theme color still applies to buttons and accents). Uploaded images are stored as base64 — keep each image under 1MB.</div>
+      <div class="help">Optional. When set, this image replaces the hero color-gradient background (the theme color still applies to buttons and accents). Images are auto-compressed (max 1920px) and stored as base64.</div>
       <div id="hero-img-prev">${s.heroImage?`<img src="${esc(s.heroImage)}" onerror="this.style.display='none'" style="width:240px;height:110px;object-fit:cover;border-radius:8px;margin-top:8px;border:1px solid var(--line);display:block">`:''}</div>
     </div>
     <div class="field"><label>Hero Title</label><input type="text" data-k="heroTitle" value="${esc(s.heroTitle||'')}"></div>
@@ -381,7 +389,7 @@ function editArticle(id){
     <div class="field"><label>Article Images (multiple)</label>
       <label class="btn btn-soft btn-sm" style="cursor:pointer">+ Add Images<input type="file" accept="image/*" multiple style="display:none" onchange="uploadGallery(event)"></label>
       <div class="img-thumbs" id="f-gallery">${renderGalleryThumbs(curGallery)}</div>
-      <div class="help">Uploaded images are stored as base64. Keep each image under 1MB to avoid exceeding storage limits.</div>
+      <div class="help">Images are auto-compressed (max 1600px, JPEG quality 85%) and stored as base64.</div>
     </div>
     <div class="row" style="margin-top:6px">
       <label class="chk"><input type="checkbox" id="f-featured" ${a.featured?'checked':''}> Mark as Featured</label>
@@ -395,28 +403,48 @@ function renderGalleryThumbs(gal){return gal.map((g,idx)=>`<div class="th"><img 
 function refreshGallery(){document.getElementById('f-gallery').innerHTML=renderGalleryThumbs(curGallery);}
 function rmGallery(idx){curGallery.splice(idx,1);refreshGallery();}
 
+function compressImage(file,maxDim,quality,cb){
+  if(!/^image\//.test(file.type)){const r=new FileReader();r.onload=()=>cb(r.result);r.readAsDataURL(file);return;}
+  const img=new Image();const url=URL.createObjectURL(file);
+  img.onload=function(){
+    let w=img.naturalWidth,h=img.naturalHeight;
+    if(w>maxDim||h>maxDim){if(w>=h){h=Math.round(h*maxDim/w);w=maxDim;}else{w=Math.round(w*maxDim/h);h=maxDim;}}
+    try{
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      cb(c.toDataURL('image/jpeg',quality));
+    }catch(e){URL.revokeObjectURL(url);const r=new FileReader();r.onload=()=>cb(r.result);r.readAsDataURL(file);}
+  };
+  img.onerror=function(){URL.revokeObjectURL(url);const r=new FileReader();r.onload=()=>cb(r.result);r.readAsDataURL(file);};
+  img.src=url;
+}
 function uploadCover(e){
   const f=e.target.files[0];if(!f)return;
-  if(f.size>1.5*1024*1024&&!confirm('This image is large ('+(f.size/1024/1024).toFixed(1)+'MB). It may exceed storage limits. Continue?'))return;
-  const r=new FileReader();r.onload=()=>{document.getElementById('f-cover').value=r.result;document.getElementById('f-cover-prev').innerHTML=`<img src="${r.result}" style="width:120px;height:80px;object-fit:cover;border-radius:8px;margin-top:8px;border:1px solid var(--line);display:block">`;};r.readAsDataURL(f);
+  compressImage(f,1600,0.85,function(data){
+    document.getElementById('f-cover').value=data;
+    document.getElementById('f-cover-prev').innerHTML='<img src="'+data+'" style="width:120px;height:80px;object-fit:cover;border-radius:8px;margin-top:8px;border:1px solid var(--line);display:block">';
+  });
+  e.target.value='';
 }
 function uploadGallery(e){
   const files=[...e.target.files];let done=0;
+  if(files.length===0)return;
   files.forEach(f=>{
-    if(f.size>1.5*1024*1024){toast('Skipped large image: '+f.name);done++;return;}
-    const r=new FileReader();r.onload=()=>{curGallery.push(r.result);done++;if(done===files.length)refreshGallery();};r.readAsDataURL(f);
+    compressImage(f,1600,0.85,function(data){
+      curGallery.push(data);done++;if(done===files.length)refreshGallery();
+    });
   });
-  if(files.length===0)refreshGallery();
+  e.target.value='';
 }
 function uploadHeroImg(e){
   const f=e.target.files[0];if(!f)return;
-  if(f.size>1.5*1024*1024&&!confirm('This image is large ('+(f.size/1024/1024).toFixed(1)+'MB). It may exceed storage limits. Continue?'))return;
-  const r=new FileReader();r.onload=()=>{
-    D.settings.heroImage=r.result;
-    const inp=document.getElementById('f-heroImg');if(inp)inp.value=r.result;
-    const pv=document.getElementById('hero-img-prev');if(pv)pv.innerHTML='<img src="'+r.result+'" style="width:240px;height:110px;object-fit:cover;border-radius:8px;margin-top:8px;border:1px solid var(--line);display:block">';
+  compressImage(f,1920,0.85,function(data){
+    D.settings.heroImage=data;
+    const inp=document.getElementById('f-heroImg');if(inp)inp.value=data;
+    const pv=document.getElementById('hero-img-prev');if(pv)pv.innerHTML='<img src="'+data+'" style="width:240px;height:110px;object-fit:cover;border-radius:8px;margin-top:8px;border:1px solid var(--line);display:block">';
     saveLocalSilent();toast('Hero background image set');
-  };r.readAsDataURL(f);
+  });
   e.target.value='';
 }
 function clearHeroImg(){
@@ -455,7 +483,7 @@ function delArticle(id){const a=D.articles.find(x=>x.id===id);if(!a||!confirm('D
 function dupArticle(id){const a=D.articles.find(x=>x.id===id);if(!a)return;const c=clone(a);c.id=uid('a');c.title=a.title+' (Copy)';D.articles.push(c);renderArticles();saveLocalSilent();toast('Duplicated');}
 
 /* ---------- Data Storage ---------- */
-function saveLocalSilent(){try{localStorage.setItem(LS_KEY,JSON.stringify(D));}catch(e){toast('Storage failed (possibly exceeded limit). Please export the data file and reduce image sizes.');}}
+function saveLocalSilent(){storePut(D).then(function(){}).catch(function(e){toast('Storage failed: '+e+'. Try exporting data.js to keep your work.');});}
 function saveLocal(){saveLocalSilent();toast('Saved to current browser. Click "View Site" to preview.');}
 function exportData(){
   const txt='/* Site data file - exported from admin panel */\nwindow.SITE_DATA = '+JSON.stringify(D,null,2)+';\n';
@@ -474,16 +502,16 @@ function importData(e){
       if(txt.startsWith('{')||txt.startsWith('['))obj=JSON.parse(txt);
       else{const m=txt.match(/window\.SITE_DATA\s*=\s*(\{[\s\S]*\})\s*;?/);if(!m)throw 0;obj=JSON.parse(m[1]);}
       if(!obj.settings)throw 0;
-      D=obj;localStorage.setItem(LS_KEY,JSON.stringify(D));
-      setAccent();renderAll();toast('Import successful');
+      D=obj;storePut(D).then(function(){setAccent();renderAll();toast('Import successful');}).catch(function(e){toast('Imported to memory but storage failed: '+e);});
     }catch(err){toast('Parse failed: please select a valid data.js file');}
   };r.readAsText(f);
   e.target.value='';
 }
 function resetData(){
   if(!confirm('Reset to default data? All current changes will be cleared.'))return;
-  D=getDefault();localStorage.removeItem(LS_KEY);
-  location.reload();
+  D=getDefault();
+  if(typeof indexedDB!=='undefined'){idbDel(LS_KEY).then(function(){location.reload();}).catch(function(){location.reload();});}
+  else{try{localStorage.removeItem(LS_KEY);}catch(e){}location.reload();}
 }
 </script>
 </body>
