@@ -69,6 +69,18 @@ window.SITE_DATA={
       "name": "Thyroid",
       "icon": "📁",
       "desc": ""
+    },
+    {
+      "id": "cmtlbbmmltp5",
+      "name": "Lymph Node",
+      "icon": "📁",
+      "desc": ""
+    },
+    {
+      "id": "cmtlbcvcuaqw",
+      "name": "Review / Consensus / Methodology",
+      "icon": "📁",
+      "desc": ""
     }
   ],
   "articles": [
@@ -102,5 +114,5 @@ window.SITE_DATA={
       "galleryLayout": "auto"
     }
   ],
-  "lastSaved": 1788426870085
+  "lastSaved": 1788427167504
 };
