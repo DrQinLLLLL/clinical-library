@@ -120,8 +120,19 @@ footer{background:#0c1c38;color:#aebcd6;padding:40px 0}
 .findings{list-style:none}
 .findings li{position:relative;padding-left:26px;margin:7px 0;color:#33425c;font-size:14.5px}
 .findings li::before{content:"";position:absolute;left:4px;top:9px;width:9px;height:9px;border-radius:50%;background:var(--accent)}
-.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:8px}
-.gallery img{border-radius:10px;height:120px;width:100%;object-fit:cover;cursor:pointer;border:1px solid var(--line)}
+.gallery{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px}
+.gallery .gal-img{border-radius:10px;overflow:hidden;cursor:pointer;border:1px solid var(--line);background:#fff;transition:box-shadow .15s}
+.gallery .gal-img:hover{box-shadow:0 6px 18px rgba(20,50,90,.13)}
+.gallery .gal-img img{width:100%;height:auto;display:block}
+.gallery .gal-img .cap{padding:8px 12px;font-size:13px;color:var(--sub);text-align:center;line-height:1.5}
+.gallery.layout-auto .gi-auto{flex:1 1 240px;max-width:320px}
+.gallery.layout-auto .gi-small{flex:1 1 160px;max-width:33%}
+.gallery.layout-auto .gi-medium{flex:1 1 340px;max-width:50%}
+.gallery.layout-auto .gi-large{flex:1 1 500px;max-width:66%}
+.gallery.layout-auto .gi-full{flex:1 1 100%;max-width:100%}
+.gallery.layout-single .gal-img{flex:1 1 100%;width:100%;max-width:100%}
+.gallery.layout-two .gal-img{flex:1 1 50%;max-width:50%}
+.gallery.layout-three .gal-img{flex:1 1 33.33%;max-width:33.33%}
 .tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:18px}
 .links-row{margin-top:20px;display:flex;gap:12px;flex-wrap:wrap}
 
@@ -140,6 +151,8 @@ footer{background:#0c1c38;color:#aebcd6;padding:40px 0}
   .hero{padding:56px 0 46px}
   .modal-cover{height:200px}
   .modal-body{padding:20px 18px 26px}
+  .gallery.layout-two .gal-img,.gallery.layout-three .gal-img{flex:1 1 100%;max-width:100%}
+  .gallery.layout-auto .gi-small,.gallery.layout-auto .gi-medium,.gallery.layout-auto .gi-large{flex:1 1 100%;max-width:100%}
 }
 .mobile-drawer{position:fixed;inset:0;z-index:80;background:rgba(10,22,46,.5);display:none}
 .mobile-drawer.show{display:block}
@@ -291,10 +304,17 @@ function bind(){
   document.querySelectorAll('.card').forEach(c=>c.onclick=()=>openArticle(c.dataset.id));
   document.getElementById('chips')&&0;
 }
+function normGalItem(g){if(typeof g==='string')return{src:g,caption:'',size:'auto'};return{src:g.src||'',caption:g.caption||'',size:g.size||'auto'};}
 function openArticle(id){
   const a=(D.articles||[]).find(x=>x.id===id);if(!a)return;
   const cat=(D.categories||[]).find(c=>c.id===a.catId);
-  const gal=(a.gallery||[]).map(g=>`<img src="${esc(g)}" alt="" onerror="this.style.display='none'" data-full="${esc(g)}">`).join('');
+  const galItems=(a.gallery||[]).map(normGalItem);
+  const layout=a.galleryLayout||'auto';
+  const galHtml=galItems.length?'<div class="block-title">Images</div><div class="gallery layout-'+esc(layout)+'" id="gallery">'+
+    galItems.map(function(g){
+      var cls=(layout==='auto'||!layout)?'gi-'+esc(g.size||'auto'):'gi-auto';
+      return '<div class="gal-img '+cls+'"><img src="'+esc(g.src)+'" alt="" loading="lazy" onerror="this.parentElement.style.display=\'none\'" data-full="'+esc(g.src)+'">'+(g.caption?'<div class="cap">'+esc(g.caption)+'</div>':'')+'</div>';
+    }).join('')+'</div>':'';
   const find=(a.findings||[]).map(f=>`<li>${esc(f)}</li>`).join('');
   const tags=(a.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('');
   const links=[];
@@ -315,9 +335,9 @@ function openArticle(id){
         ${a.year?`<span><b>Year:</b> ${esc(a.year)}</span>`:''}
         ${a.doi?`<span><b>DOI:</b> ${esc(a.doi)}</span>`:''}
       </div>
-      ${a.abstract?`<div class="block-title">Abstract</div><div class="abs">${esc(a.abstract)}</div>`:''}
-      ${find?`<div class="block-title">Key Findings</div><ul class="findings">${find}</ul>`:''}
-      ${gal?`<div class="block-title">Article Images</div><div class="gallery" id="gallery">${gal}</div>`:''}
+      ${a.abstract?`<div class="block-title">What This Study Shows &amp; Clinical Significance</div><div class="abs">${esc(a.abstract)}</div>`:''}
+      ${find?`<div class="block-title">Results</div><ul class="findings">${find}</ul>`:''}
+      ${galHtml}
       ${tags?`<div class="tags">${tags}</div>`:''}
       ${links.length?`<div class="links-row">${links.join('')}</div>`:''}
     </div>`;
