@@ -35,7 +35,9 @@ header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.9);backdrop
 .hero::after{content:"";position:absolute;inset:0;background:radial-gradient(900px 380px at 80% 0%,rgba(255,255,255,.16),transparent)}
 .hero .wrap{position:relative;z-index:1}
 .hero h1{font-size:clamp(28px,5vw,46px);font-weight:800;letter-spacing:.5px;max-width:780px}
-.hero p{margin-top:18px;font-size:clamp(15px,2.4vw,18px);opacity:.92;max-width:740px}
+.hero p{margin-top:18px;font-size:clamp(15px,2.4vw,18px);opacity:.92;max-width:740px;white-space:pre-wrap}
+.hero .hero-sub{margin-top:16px;font-weight:600;font-size:clamp(16px,2.6vw,20px);opacity:.95;max-width:780px;white-space:pre-wrap}
+.hero.has-img::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,18,42,.5),rgba(6,18,42,.64));z-index:0}
 .hero-actions{margin-top:30px;display:flex;gap:14px;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:11px;font-weight:600;font-size:15px;cursor:pointer;border:none;transition:transform .15s,box-shadow .15s}
 .btn:active{transform:translateY(1px)}
@@ -216,8 +218,12 @@ let curCat='all', curQuery='';
 
 function renderHero(){
   const stats=(s.stats||[]).map(st=>`<div class="stat"><div class="num">${esc(st.num)}</div><div class="lab">${esc(st.lab)}</div></div>`).join('');
-  return `<section class="hero" id="home"><div class="wrap">
+  const hasImg=!!s.heroImage;
+  const bg=hasImg?` style="background-image:url('${String(s.heroImage).replace(/'/g,'%27')}');background-size:cover;background-position:center"`:'';
+  const sub=s.siteSub?`<p class="hero-sub">${esc(s.siteSub)}</p>`:'';
+  return `<section class="hero${hasImg?' has-img':''}" id="home"${bg}><div class="wrap">
     <h1>${esc(s.heroTitle||'')}</h1>
+    ${sub}
     <p>${esc(s.heroDesc||'')}</p>
     <div class="hero-actions">
       <a class="btn btn-light" href="#library">Browse Library &rarr;</a>
