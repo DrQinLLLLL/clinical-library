@@ -48,7 +48,25 @@ window.SITE_DATA={
   "categories": [
     {
       "id": "cmtl5c38opha",
-      "name": "liver",
+      "name": "Liver",
+      "icon": "📁",
+      "desc": ""
+    },
+    {
+      "id": "cmtlaqcozhj3",
+      "name": "Kidney",
+      "icon": "📁",
+      "desc": ""
+    },
+    {
+      "id": "cmtlaqhl6fpg",
+      "name": "Breast",
+      "icon": "📁",
+      "desc": ""
+    },
+    {
+      "id": "cmtlaqtizptm",
+      "name": "Thyroid",
       "icon": "📁",
       "desc": ""
     }
