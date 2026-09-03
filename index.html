@@ -106,8 +106,8 @@ footer{background:#0c1c38;color:#aebcd6;padding:40px 0}
 .overlay.show{display:block}
 .modal{max-width:860px;margin:auto;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,.4)}
 .modal-head{position:relative}
-.modal-cover{height:300px;background:linear-gradient(135deg,#dde7f5,#cdddf0)}
-.modal-cover img{width:100%;height:100%;object-fit:cover}
+.modal-cover{background:linear-gradient(135deg,#dde7f5,#cdddf0);overflow:hidden}
+.modal-cover img{width:100%;height:auto;max-height:500px;object-fit:contain}
 .modal-close{position:absolute;top:14px;right:14px;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;border:none;font-size:22px;cursor:pointer;display:grid;place-items:center}
 .modal-body{padding:26px 30px 34px}
 .modal-body .cat{color:var(--accent);font-weight:700;font-size:14px}
@@ -149,7 +149,7 @@ footer{background:#0c1c38;color:#aebcd6;padding:40px 0}
   .nav-links,.nav-search{display:none}
   .menu-btn{display:block}
   .hero{padding:56px 0 46px}
-  .modal-cover{height:200px}
+  .modal-cover img{max-height:280px}
   .modal-body{padding:20px 18px 26px}
   .gallery.layout-two .gal-img,.gallery.layout-three .gal-img{flex:1 1 100%;max-width:100%}
   .gallery.layout-auto .gi-small,.gallery.layout-auto .gi-medium,.gallery.layout-auto .gi-large{flex:1 1 100%;max-width:100%}
