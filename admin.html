@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Admin Panel</title>
 <script src="data.js"></script>
 <style>
@@ -574,7 +577,7 @@ function delArticle(id){const a=D.articles.find(x=>x.id===id);if(!a||!confirm('D
 function dupArticle(id){const a=D.articles.find(x=>x.id===id);if(!a)return;const c=clone(a);c.id=uid('a');c.title=a.title+' (Copy)';D.articles.push(c);renderArticles();saveLocalSilent();toast('Duplicated');}
 
 /* ---------- Data Storage ---------- */
-function saveLocalSilent(){storePut(D).then(function(){}).catch(function(e){toast('Storage failed: '+e+'. Try exporting data.js to keep your work.');});}
+function saveLocalSilent(){D.lastSaved=Date.now();storePut(D).then(function(){}).catch(function(e){toast('Storage failed: '+e+'. Try exporting data.js to keep your work.');});}
 function saveLocal(){saveLocalSilent();toast('Saved to current browser. Click "View Site" to preview.');}
 function exportData(){
   const txt='/* Site data file - exported from admin panel */\nwindow.SITE_DATA = '+JSON.stringify(D,null,2)+';\n';
@@ -637,6 +640,7 @@ function publishToGitHub(){
   var st=document.getElementById('gh-status');
   btn.disabled=true;btn.textContent='Publishing...';
   st.innerHTML='<span style="color:var(--warn)">Uploading data to GitHub...</span>';
+  D.lastSaved=Date.now();
   var content='/* Site data file - published from admin panel */\nwindow.SITE_DATA='+JSON.stringify(D,null,2)+';\n';
   var b64=utf8ToBase64(content);
   var apiUrl='https://api.github.com/repos/'+owner+'/'+repo+'/contents/'+path+'?ref='+encodeURIComponent(branch);
