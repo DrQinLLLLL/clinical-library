@@ -631,6 +631,12 @@ function utf8ToBase64(str){
   for(var i=0;i<bytes.length;i++)binary+=String.fromCharCode(bytes[i]);
   return btoa(binary);
 }
+function decodeBase64(b64){
+  var binary=atob(b64.replace(/\n/g,''));
+  var bytes=new Uint8Array(binary.length);
+  for(var i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
 function publishToGitHub(){
   var token=val('gh-token'),owner=val('gh-owner'),repo=val('gh-repo');
   var branch=val('gh-branch')||'main',path=val('gh-path')||'data.js';
@@ -639,22 +645,40 @@ function publishToGitHub(){
   var btn=document.getElementById('gh-publish-btn');
   var st=document.getElementById('gh-status');
   btn.disabled=true;btn.textContent='Publishing...';
-  st.innerHTML='<span style="color:var(--warn)">Uploading data to GitHub...</span>';
+  st.innerHTML='<span style="color:var(--warn)">Step 1/2: Uploading data.js...</span>';
   D.lastSaved=Date.now();
   var content='/* Site data file - published from admin panel */\nwindow.SITE_DATA='+JSON.stringify(D,null,2)+';\n';
   var b64=utf8ToBase64(content);
   var apiUrl='https://api.github.com/repos/'+owner+'/'+repo+'/contents/'+path+'?ref='+encodeURIComponent(branch);
-  fetch(apiUrl,{headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'}})
+  var ghHeaders={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'};
+  /* Step 1: Push data.js */
+  fetch(apiUrl,{headers:ghHeaders})
   .then(function(r){if(r.status===404)return null;if(!r.ok)throw new Error('Failed to get file info (HTTP '+r.status+')');return r.json();})
   .then(function(data){
     var sha=data?data.sha:null;
-    return fetch(apiUrl,{method:'PUT',headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','Content-Type':'application/json'},
+    return fetch(apiUrl,{method:'PUT',headers:Object.assign({},ghHeaders,{'Content-Type':'application/json'}),
       body:JSON.stringify({message:'Update site data from admin panel',content:b64,sha:sha,branch:branch})});
   })
   .then(function(r){if(!r.ok)return r.json().then(function(d){throw new Error((d.message||'Publish failed')+' (HTTP '+r.status+')')});return r.json();})
+  /* Step 2: Update index.html with cache-busting version on data.js script tag */
+  .then(function(){
+    st.innerHTML='<span style="color:var(--warn)">Step 2/2: Updating page for auto-refresh...</span>';
+    var indexUrl='https://api.github.com/repos/'+owner+'/'+repo+'/contents/index.html?ref='+encodeURIComponent(branch);
+    return fetch(indexUrl,{headers:ghHeaders})
+    .then(function(r){if(!r.ok)throw new Error('Failed to get index.html (HTTP '+r.status+')');return r.json();})
+    .then(function(data){
+      var html=decodeBase64(data.content);
+      var version=Date.now();
+      html=html.replace(/<script src="data\.js(\?v=\d+)?"><\/script>/,'<script src="data.js?v='+version+'"><\/script>');
+      var idxB64=utf8ToBase64(html);
+      return fetch(indexUrl,{method:'PUT',headers:Object.assign({},ghHeaders,{'Content-Type':'application/json'}),
+        body:JSON.stringify({message:'Cache-bust data.js v'+version,content:idxB64,sha:data.sha,branch:branch})});
+    })
+    .then(function(r){if(!r.ok)return r.json().then(function(d){throw new Error('Failed to update index.html: '+(d.message||'')+' (HTTP '+r.status+')')});return r.json();});
+  })
   .then(function(){
     btn.disabled=false;btn.textContent='Publish Data to GitHub';
-    st.innerHTML='<span style="color:#15643a">&#10003; Published successfully! Changes will be live on all devices in 1-2 minutes.</span>';
+    st.innerHTML='<span style="color:#15643a">&#10003; Published! All visitors (including mobile) will see updates in 1-2 min. No refresh needed.</span>';
     toast('Published to GitHub!');
   })
   .catch(function(err){
