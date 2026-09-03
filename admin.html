@@ -264,10 +264,19 @@ function renderSettings(){
   const s=D.settings;
   document.getElementById('settings-form').innerHTML=`
     <div class="field"><label>Site Name</label><input type="text" data-k="siteName" value="${esc(s.siteName||'')}"></div>
-    <div class="field"><label>Subtitle</label><input type="text" data-k="siteSub" value="${esc(s.siteSub||'')}"></div>
+    <div class="field"><label>Subtitle</label><textarea data-k="siteSub" style="min-height:96px" placeholder="Shown under the hero title. Press Enter to start a new line.">${esc(s.siteSub||'')}</textarea><div class="help">Multi-line supported. Line breaks will be preserved on the site.</div></div>
     <div class="half">
       <div class="field"><label>Theme Color</label><div class="color-pick"><input type="color" data-k="accent" value="${esc(s.accent||'#1668dc')}"><span class="cv" style="font-size:13px;color:var(--sub)">${esc(s.accent||'#1668dc')}</span></div></div>
       <div class="field"><label>Admin Password</label><input type="text" data-k="adminPassword" value="${esc(s.adminPassword||'')}" placeholder="admin888"></div>
+    </div>
+    <div class="field"><label>Hero Background Image</label>
+      <div class="row">
+        <input type="url" data-k="heroImage" id="f-heroImg" value="${esc(s.heroImage||'')}" placeholder="Image URL, or click Upload on the right" style="flex:1;min-width:200px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;outline:none">
+        <label class="btn btn-soft btn-sm" style="cursor:pointer">Upload Image<input type="file" accept="image/*" style="display:none" onchange="uploadHeroImg(event)"></label>
+        <button class="btn btn-danger btn-sm" onclick="clearHeroImg()">Remove</button>
+      </div>
+      <div class="help">Optional. When set, this image replaces the hero color-gradient background (the theme color still applies to buttons and accents). Uploaded images are stored as base64 — keep each image under 1MB.</div>
+      <div id="hero-img-prev">${s.heroImage?`<img src="${esc(s.heroImage)}" onerror="this.style.display='none'" style="width:240px;height:110px;object-fit:cover;border-radius:8px;margin-top:8px;border:1px solid var(--line);display:block">`:''}</div>
     </div>
     <div class="field"><label>Hero Title</label><input type="text" data-k="heroTitle" value="${esc(s.heroTitle||'')}"></div>
     <div class="field"><label>Hero Description</label><textarea data-k="heroDesc">${esc(s.heroDesc||'')}</textarea></div>
@@ -398,6 +407,23 @@ function uploadGallery(e){
     const r=new FileReader();r.onload=()=>{curGallery.push(r.result);done++;if(done===files.length)refreshGallery();};r.readAsDataURL(f);
   });
   if(files.length===0)refreshGallery();
+}
+function uploadHeroImg(e){
+  const f=e.target.files[0];if(!f)return;
+  if(f.size>1.5*1024*1024&&!confirm('This image is large ('+(f.size/1024/1024).toFixed(1)+'MB). It may exceed storage limits. Continue?'))return;
+  const r=new FileReader();r.onload=()=>{
+    D.settings.heroImage=r.result;
+    const inp=document.getElementById('f-heroImg');if(inp)inp.value=r.result;
+    const pv=document.getElementById('hero-img-prev');if(pv)pv.innerHTML='<img src="'+r.result+'" style="width:240px;height:110px;object-fit:cover;border-radius:8px;margin-top:8px;border:1px solid var(--line);display:block">';
+    saveLocalSilent();toast('Hero background image set');
+  };r.readAsDataURL(f);
+  e.target.value='';
+}
+function clearHeroImg(){
+  D.settings.heroImage='';
+  const inp=document.getElementById('f-heroImg');if(inp)inp.value='';
+  const pv=document.getElementById('hero-img-prev');if(pv)pv.innerHTML='';
+  saveLocalSilent();toast('Hero background image removed');
 }
 
 function saveArticle(){
