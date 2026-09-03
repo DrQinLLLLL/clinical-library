@@ -18,6 +18,7 @@ window.SITE_DATA = {
     "footerText": "\u00a9 My Library \u00b7 Managed via Admin Panel",
     "contactEmail": "",
     "accent": "#1668dc",
+    "heroImage": "",
     "adminPassword": "admin888",
     "showIntro": true,
     "showAbout": true,
