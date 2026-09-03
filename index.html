@@ -364,7 +364,21 @@ const drawer=document.getElementById('drawer');
 document.getElementById('menu-btn').onclick=()=>drawer.classList.add('show');
 drawer.onclick=e=>{if(e.target.id==='drawer')drawer.classList.remove('show');};
 
-storeGet().then(function(o){init((o&&o.settings)?o:getDataDefault());}).catch(function(){init(getDataDefault());});
+/* Robust init: render immediately with localStorage or default data,
+   then upgrade from IndexedDB if available. Prevents blank page on
+   mobile browsers where IndexedDB may hang or be blocked. */
+function tryLocalData(){try{var o=JSON.parse(localStorage.getItem(LS_KEY));if(o&&o.settings)return o;}catch(e){}return null;}
+var _local=tryLocalData();
+init(_local||getDataDefault());  /* render immediately — never blank */
+if(typeof indexedDB!=='undefined'){
+  var _idbTimer=setTimeout(function(){},0);
+  idbGet(LS_KEY).then(function(v){
+    clearTimeout(_idbTimer);
+    if(v&&v.settings){init(v);}  /* upgrade to IndexedDB data if newer */
+  }).catch(function(){clearTimeout(_idbTimer);});
+  /* safety: if IDB hangs >3s, page already rendered — do nothing */
+  setTimeout(function(){},3000);
+}
 </script>
 </body>
 </html>
