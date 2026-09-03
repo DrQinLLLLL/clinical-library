@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel</title>
+<script src="data.js"></script>
+<style>
+:root{--accent:#1668dc;--ink:#0f1f3d;--sub:#54627a;--line:#e3e9f1;--bg:#f4f7fc;--card:#fff;--soft:#eef3fb;--warn:#e08600;--danger:#e5484d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
+a{color:var(--accent)}
+input,textarea,select{font-family:inherit;font-size:14.5px}
+button{font-family:inherit;cursor:pointer}
+.wrap{max-width:1080px;margin:0 auto;padding:0 18px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:9px;font-weight:600;font-size:14px;border:1px solid transparent;transition:.15s;text-decoration:none}
+.btn-pri{background:var(--accent);color:#fff}
+.btn-pri:hover{filter:brightness(1.06)}
+.btn-soft{background:var(--soft);color:var(--accent)}
+.btn-ghost{background:#fff;border-color:var(--line);color:var(--ink)}
+.btn-ghost:hover{border-color:var(--accent)}
+.btn-danger{background:#fff;border-color:#ffd6d8;color:var(--danger)}
+.btn-sm{padding:5px 10px;font-size:13px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.login{min-height:100vh;display:grid;place-items:center;padding:20px}
+.login-box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:34px;width:100%;max-width:380px;box-shadow:0 20px 50px rgba(20,50,90,.1)}
+.login-box h1{font-size:22px;margin-bottom:4px}
+.login-box p{color:var(--sub);font-size:14px;margin-bottom:20px}
+.login-box input{width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:9px;margin-bottom:12px;outline:none}
+.login-box input:focus{border-color:var(--accent)}
+.hint{font-size:12px;color:var(--sub);margin-top:8px}
+.topbar{position:sticky;top:0;z-index:40;background:#fff;border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;height:58px;gap:12px}
+.tb-brand{font-weight:700;display:flex;align-items:center;gap:8px}
+.tb-brand .dot{width:26px;height:26px;border-radius:7px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:14px;flex:none}
+.tabs{display:flex;gap:4px;overflow-x:auto}
+.tabs button{background:none;border:none;padding:8px 14px;border-radius:8px;font-weight:600;font-size:14.5px;color:var(--sub);white-space:nowrap}
+.tabs button.on{background:var(--accent);color:#fff}
+.tb-acts{display:flex;gap:8px;align-items:center}
+.panel{display:none;padding:24px 0 60px}
+.panel.on{display:block}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px;flex-wrap:wrap}
+.section-head h2{font-size:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+.field{margin-bottom:14px}
+.field label{display:block;font-weight:600;font-size:13.5px;margin-bottom:6px}
+.field label .req{color:var(--danger)}
+.field input[type=text],.field input[type=url],.field input[type=number],.field input[type=email],.field textarea,.field select{width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;outline:none;background:#fff}
+.field textarea{min-height:90px;resize:vertical;line-height:1.6}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent)}
+.field .help{font-size:12px;color:var(--sub);margin-top:4px}
+.half{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px}
+.chk input{width:18px;height:18px;accent-color:var(--accent)}
+.list-item{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;margin-bottom:10px}
+.list-item .ic{font-size:22px;width:34px;text-align:center}
+.list-item .info{flex:1;min-width:0}
+.list-item .info b{font-size:15px;display:block}
+.list-item .info .s{font-size:12.5px;color:var(--sub);display:block;margin-top:2px}
+.list-item .acts{display:flex;gap:6px;flex-wrap:wrap}
+.art-cover{width:60px;height:42px;border-radius:6px;object-fit:cover;background:var(--soft);flex:none}
+.badge{font-size:12px;background:var(--soft);color:var(--accent);padding:2px 9px;border-radius:6px;font-weight:600}
+.badge.hide{background:#fdeaea;color:var(--danger)}
+.badge.star{background:#fff5e0;color:var(--warn)}
+.img-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.img-thumbs .th{position:relative}
+.img-thumbs img{width:80px;height:60px;object-fit:cover;border-radius:7px;border:1px solid var(--line)}
+.img-thumbs .rm{position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:50%;background:var(--danger);color:#fff;border:none;font-size:13px;line-height:1;cursor:pointer}
+.callout{border-radius:11px;padding:14px 16px;font-size:13.5px;margin-bottom:16px;line-height:1.7}
+.callout.info{background:#eef4ff;color:#23477e;border:1px solid #d6e3ff}
+.callout.ok{background:#e8f7ef;color:#15643a;border:1px solid #c6eed8}
+.stat-row,.feat-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center}
+.stat-row input,.feat-row input{padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;outline:none}
+.stat-row .n{width:90px}
+.stat-row .l{flex:1;min-width:140px}
+.feat-row .i{width:50px;text-align:center}
+.feat-row .t{width:170px}
+.feat-row .d{flex:1;min-width:180px}
+.color-pick{display:flex;align-items:center;gap:10px}
+.color-pick input[type=color]{width:42px;height:38px;border:1.5px solid var(--line);border-radius:8px;background:#fff}
+.editor-overlay{position:fixed;inset:0;z-index:90;background:rgba(10,22,46,.55);display:none;padding:18px;overflow:auto}
+.editor-overlay.show{display:block}
+.editor{max-width:760px;margin:auto;background:#fff;border-radius:16px;box-shadow:0 30px 70px rgba(0,0,0,.4)}
+.editor-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.editor-head h3{font-size:18px}
+.editor-body{padding:20px;max-height:72vh;overflow:auto}
+.editor-foot{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;background:#fafcff;border-radius:0 0 16px 16px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f1f3d;color:#fff;padding:11px 22px;border-radius:10px;font-size:14px;z-index:200;box-shadow:0 10px 30px rgba(0,0,0,.3);display:none}
+.toast.show{display:block}
+.empty{text-align:center;padding:30px;color:var(--sub)}
+@media(max-width:680px){
+  .half{grid-template-columns:1fr}
+  .topbar .wrap{height:auto;flex-direction:column;align-items:stretch;padding:10px 14px}
+  .tabs{order:3}
+}
+</style>
+</head>
+<body>
+
+<div class="login" id="login">
+  <div class="login-box">
+    <h1>Admin Panel</h1>
+    <p>Please enter the admin password to log in</p>
+    <input type="password" id="pw" placeholder="Admin password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn btn-pri" style="width:100%;justify-content:center" onclick="doLogin()">Login</button>
+    <div class="hint">Default password: <b>admin888</b> (can be changed in Settings)</div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <div class="topbar"><div class="wrap">
+    <div class="tb-brand"><span class="dot" id="b-dot">U</span><span id="b-name">Admin Panel</span></div>
+    <div class="tabs" id="tabs">
+      <button class="on" data-t="articles">Articles</button>
+      <button data-t="cats">Categories</button>
+      <button data-t="settings">Settings</button>
+      <button data-t="data">Data</button>
+    </div>
+    <div class="tb-acts">
+      <a class="btn btn-ghost btn-sm" href="index.html" target="_blank">&#8599; View Site</a>
+      <button class="btn btn-soft btn-sm" onclick="saveLocal()">Save</button>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Logout</button>
+    </div>
+  </div></div>
+
+  <div class="panel on" id="p-articles"><div class="wrap">
+    <div class="section-head"><h2>Articles</h2>
+      <div class="row">
+        <select id="art-filter" style="padding:8px 12px;border:1.5px solid var(--line);border-radius:8px"><option value="">All categories</option></select>
+        <button class="btn btn-pri" onclick="editArticle()">+ New Article</button>
+      </div>
+    </div>
+    <div class="card" id="art-list"></div>
+  </div></div>
+
+  <div class="panel" id="p-cats"><div class="wrap">
+    <div class="section-head"><h2>Categories</h2><button class="btn btn-pri" onclick="addCategory()">+ New Category</button></div>
+    <div class="card" id="cat-list"></div>
+    <div class="callout info">Tip: Categories are used to group articles. You can set an icon emoji, name, and description. Deleting a category will not delete its articles (they will become "Uncategorized").</div>
+  </div></div>
+
+  <div class="panel" id="p-settings"><div class="wrap">
+    <div class="section-head"><h2>Settings</h2><button class="btn btn-pri" onclick="saveLocal()">Save Settings</button></div>
+    <div class="card" id="settings-form"></div>
+  </div></div>
+
+  <div class="panel" id="p-data"><div class="wrap">
+    <div class="section-head"><h2>Data Management</h2></div>
+    <div class="card">
+      <div class="callout info">
+        <b>How it works:</b> All changes made in this admin panel are saved to your <b>current browser</b> by default. Click "View Site" to preview instantly.<br>
+        To make changes visible to <b>all visitors</b>, click "Export data.js" and replace the file on the server (or redeploy).
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn btn-pri" onclick="saveLocal()">Save to Browser (Preview)</button>
+        <button class="btn btn-soft" onclick="exportData()">Export data.js</button>
+        <label class="btn btn-ghost" style="cursor:pointer">Import Data<input type="file" id="import-file" accept=".js,.json" style="display:none" onchange="importData(event)"></label>
+        <button class="btn btn-danger" onclick="resetData()">Reset to Default</button>
+      </div>
+      <div class="callout ok" style="margin-top:14px">
+        <b>Data structure:</b> Site data consists of settings (site settings), categories (category list), and articles (article list). Article fields include: title, English title, authors, journal, year, DOI, original link, category, tags, abstract, key findings, cover image, gallery images, featured flag, and visibility flag.
+      </div>
+    </div>
+  </div></div>
+</div>
+
+<div class="editor-overlay" id="editor-ov"><div class="editor">
+  <div class="editor-head"><h3 id="editor-title">New Article</h3><button class="btn btn-ghost btn-sm" onclick="closeEditor()">&times;</button></div>
+  <div class="editor-body" id="editor-body"></div>
+  <div class="editor-foot">
+    <button class="btn btn-ghost" onclick="closeEditor()">Cancel</button>
+    <button class="btn btn-pri" onclick="saveArticle()">Save Article</button>
+  </div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const LS_KEY='site_data_v2';
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function clone(o){return JSON.parse(JSON.stringify(o));}
+function getDefault(){return window.SITE_DATA?clone(window.SITE_DATA):{settings:{},categories:[],articles:[]};}
+function getData(){try{const o=JSON.parse(localStorage.getItem(LS_KEY));if(o&&o.settings)return o;}catch(e){}return getDefault();}
+function uid(p){return (p||'a')+Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+
+let D=getData();
+let curTab='articles';
+let editingId=null;
+let curGallery=[];   // working gallery array for the current editor
+
+function setAccent(){document.documentElement.style.setProperty('--accent',(D.settings.accent||'#1668dc'));}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);}
+function catName(id){const c=D.categories.find(x=>x.id===id);return c?c.name:'Uncategorized';}
+
+/* ---------- Login ---------- */
+function doLogin(){
+  const v=document.getElementById('pw').value;
+  if(v===(D.settings.adminPassword||'admin888')){sessionStorage.setItem('admin_ok','1');enterApp();}
+  else toast('Wrong password');
+}
+function logout(){sessionStorage.removeItem('admin_ok');location.reload();}
+function enterApp(){
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+  setAccent();
+  document.getElementById('b-name').textContent=(D.settings.siteName||'Admin')+' \u00b7 Admin';
+  document.getElementById('b-dot').textContent=(D.settings.siteName||'U').charAt(0).toUpperCase();
+  renderAll();
+}
+if(sessionStorage.getItem('admin_ok')==='1')enterApp();
+
+/* ---------- Tabs ---------- */
+document.getElementById('tabs').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  curTab=b.dataset.t;
+  document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('p-'+curTab).classList.add('on');
+});
+
+/* ---------- Render ---------- */
+function renderAll(){renderArticles();renderCats();renderSettings();}
+
+function renderArticles(){
+  const sel=document.getElementById('art-filter');
+  sel.innerHTML='<option value="">All categories</option>'+D.categories.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+  sel.value=sel.dataset.v||'';
+  const f=sel.value;
+  let arts=D.articles.slice();
+  if(f)arts=arts.filter(a=>a.catId===f);
+  arts.sort((a,b)=>(b.year||0)-(a.year||0));
+  document.getElementById('art-list').innerHTML=arts.length?arts.map(a=>`
+    <div class="list-item">
+      <img class="art-cover" src="${esc(a.cover||'assets/placeholder.svg')}" onerror="this.src='assets/placeholder.svg'">
+      <div class="info"><b>${esc(a.title||'Untitled')}</b>
+        <span class="s">${esc(catName(a.catId))} &middot; ${esc(a.journal||'')}${a.year?' &middot; '+esc(a.year):''}</span>
+      </div>
+      <div class="acts">
+        ${a.visible===false?'<span class="badge hide">Hidden</span>':'<span class="badge">Visible</span>'}
+        ${a.featured?'<span class="badge star">Featured</span>':''}
+        <button class="btn btn-soft btn-sm" onclick="editArticle('${esc(a.id)}')">Edit</button>
+        <button class="btn btn-ghost btn-sm" onclick="dupArticle('${esc(a.id)}')">Duplicate</button>
+        <button class="btn btn-danger btn-sm" onclick="delArticle('${esc(a.id)}')">Delete</button>
+      </div>
+    </div>`).join(''):'<div class="empty">No articles yet. Click "+ New Article" to get started.</div>';
+}
+document.getElementById('art-filter').onchange=function(){this.dataset.v=this.value;renderArticles();};
+
+function renderCats(){
+  document.getElementById('cat-list').innerHTML=D.categories.length?D.categories.map((c,i)=>`
+    <div class="list-item">
+      <div class="ic">${esc(c.icon||'\uD83D\uDCC1')}</div>
+      <div class="info"><b>${esc(c.name)}</b><span class="s">${esc(c.desc||'')}</span></div>
+      <div class="acts">
+        <button class="btn btn-ghost btn-sm" onclick="moveCat(${i},-1)" ${i===0?'disabled':''}>&uarr;</button>
+        <button class="btn btn-ghost btn-sm" onclick="moveCat(${i},1)" ${i===D.categories.length-1?'disabled':''}>&darr;</button>
+        <button class="btn btn-soft btn-sm" onclick="editCat(${i})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="delCat(${i})">Delete</button>
+      </div>
+    </div>`).join(''):'<div class="empty">No categories yet. Click "+ New Category" to get started.</div>';
+}
+
+function renderSettings(){
+  const s=D.settings;
+  document.getElementById('settings-form').innerHTML=`
+    <div class="field"><label>Site Name</label><input type="text" data-k="siteName" value="${esc(s.siteName||'')}"></div>
+    <div class="field"><label>Subtitle</label><input type="text" data-k="siteSub" value="${esc(s.siteSub||'')}"></div>
+    <div class="half">
+      <div class="field"><label>Theme Color</label><div class="color-pick"><input type="color" data-k="accent" value="${esc(s.accent||'#1668dc')}"><span class="cv" style="font-size:13px;color:var(--sub)">${esc(s.accent||'#1668dc')}</span></div></div>
+      <div class="field"><label>Admin Password</label><input type="text" data-k="adminPassword" value="${esc(s.adminPassword||'')}" placeholder="admin888"></div>
+    </div>
+    <div class="field"><label>Hero Title</label><input type="text" data-k="heroTitle" value="${esc(s.heroTitle||'')}"></div>
+    <div class="field"><label>Hero Description</label><textarea data-k="heroDesc">${esc(s.heroDesc||'')}</textarea></div>
+    <div class="field"><label>Statistics (hero data bar)</label><div id="stats-edit"></div></div>
+    <div class="row" style="margin:14px 0">
+      <label class="chk"><input type="checkbox" data-k="showIntro" ${s.showIntro!==false?'checked':''}> Show "About" section</label>
+      <label class="chk"><input type="checkbox" data-k="showAbout" ${s.showAbout!==false?'checked':''}> Show "Contact" section</label>
+    </div>
+    <div class="field"><label>About Section Title</label><input type="text" data-k="introTitle" value="${esc(s.introTitle||'')}"></div>
+    <div class="field"><label>About Section Body</label><textarea data-k="introBody">${esc(s.introBody||'')}</textarea><div class="help">Leave empty to hide the body text.</div></div>
+    <div class="field"><label>Feature Cards</label><div id="feat-edit"></div></div>
+    <div class="field"><label>Contact Section</label><textarea data-k="aboutText">${esc(s.aboutText||'')}</textarea><div class="help">Leave empty to hide the entire "Contact" section.</div></div>
+    <div class="field"><label>Footer Text</label><input type="text" data-k="footerText" value="${esc(s.footerText||'')}"></div>
+    <div class="field"><label>Contact Email (optional)</label><input type="email" data-k="contactEmail" value="${esc(s.contactEmail||'')}"></div>`;
+  renderStatsEdit();renderFeatEdit();
+  document.querySelectorAll('#settings-form [data-k]').forEach(el=>{
+    el.addEventListener('input',()=>{
+      const k=el.dataset.k;let v=el.value;
+      if(el.type==='checkbox')v=el.checked;
+      D.settings[k]=v;
+      if(k==='accent'){setAccent();const cv=el.parentElement.querySelector('.cv');if(cv)cv.textContent=v;}
+    });
+  });
+}
+function renderStatsEdit(){
+  document.getElementById('stats-edit').innerHTML=(D.settings.stats||[]).map((st,i)=>`<div class="stat-row">
+    <input class="n" placeholder="Number" value="${esc(st.num)}" oninput="D.settings.stats[${i}].num=this.value">
+    <input class="l" placeholder="Label" value="${esc(st.lab)}" oninput="D.settings.stats[${i}].lab=this.value">
+    <button class="btn btn-danger btn-sm" onclick="D.settings.stats.splice(${i},1);renderStatsEdit()">Delete</button>
+  </div>`).join('')+`<button class="btn btn-ghost btn-sm" onclick="D.settings.stats.push({num:'',lab:''});renderStatsEdit()">+ Add</button>`;
+}
+function renderFeatEdit(){
+  document.getElementById('feat-edit').innerHTML=(D.settings.features||[]).map((f,i)=>`<div class="feat-row">
+    <input class="i" placeholder="\uD83C\uDFAF" value="${esc(f.icon)}" oninput="D.settings.features[${i}].icon=this.value">
+    <input class="t" placeholder="Title" value="${esc(f.title)}" oninput="D.settings.features[${i}].title=this.value">
+    <input class="d" placeholder="Description" value="${esc(f.desc)}" oninput="D.settings.features[${i}].desc=this.value">
+    <button class="btn btn-danger btn-sm" onclick="D.settings.features.splice(${i},1);renderFeatEdit()">Delete</button>
+  </div>`).join('')+`<button class="btn btn-ghost btn-sm" onclick="D.settings.features.push({icon:'\u2726',title:'',desc:''});renderFeatEdit()">+ Add</button>`;
+}
+
+/* ---------- Categories ---------- */
+function addCategory(){
+  const name=prompt('Category name:');if(!name)return;
+  const c={id:uid('c'),name,icon:'\uD83D\uDCC1',desc:''};
+  D.categories.push(c);
+  renderCats();renderArticles();saveLocalSilent();toast('Category added');
+}
+function editCat(i){
+  const c=D.categories[i];
+  const name=prompt('Category name:',c.name);if(name===null)return;
+  const icon=prompt('Icon emoji (optional):',c.icon||'');if(icon===null)return;
+  const desc=prompt('Description:',c.desc||'');if(desc===null)return;
+  c.name=name;c.icon=icon;c.desc=desc;
+  renderCats();renderArticles();saveLocalSilent();toast('Saved');
+}
+function delCat(i){
+  if(!confirm('Delete category "'+D.categories[i].name+'"? Its articles will become Uncategorized.'))return;
+  const id=D.categories[i].id;D.categories.splice(i,1);
+  D.articles.forEach(a=>{if(a.catId===id)a.catId='';});
+  renderCats();renderArticles();saveLocalSilent();toast('Category deleted');
+}
+function moveCat(i,dir){
+  const j=i+dir;if(j<0||j>=D.categories.length)return;
+  [D.categories[i],D.categories[j]]=[D.categories[j],D.categories[i]];
+  renderCats();renderArticles();saveLocalSilent();
+}
+
+/* ---------- Article Editor ---------- */
+function editArticle(id){
+  editingId=id||null;
+  const a=id?D.articles.find(x=>x.id===id):{title:'',titleEn:'',authors:'',journal:'',year:'',doi:'',link:'',catId:(D.categories[0]||{}).id||'',tags:[],abstract:'',findings:[],cover:'',gallery:[],featured:false,visible:true};
+  curGallery=clone(a.gallery||[]);
+  const catOpts=D.categories.map(c=>`<option value="${esc(c.id)}" ${c.id===a.catId?'selected':''}>${esc(c.name)}</option>`).join('');
+  const coverPrev=a.cover?`<img src="${esc(a.cover)}" style="width:120px;height:80px;object-fit:cover;border-radius:8px;margin-top:8px;border:1px solid var(--line);display:block">`:'';
+  document.getElementById('editor-title').textContent=id?'Edit Article':'New Article';
+  document.getElementById('editor-body').innerHTML=`
+    <div class="field"><label>Title <span class="req">*</span></label><input type="text" id="f-title" value="${esc(a.title)}"></div>
+    <div class="field"><label>English Title (optional)</label><input type="text" id="f-titleEn" value="${esc(a.titleEn)}"></div>
+    <div class="half">
+      <div class="field"><label>Category</label><select id="f-catId">${catOpts||'<option value="">Uncategorized</option>'}</select></div>
+      <div class="field"><label>Year</label><input type="number" id="f-year" value="${esc(a.year)}"></div>
+    </div>
+    <div class="half">
+      <div class="field"><label>Journal</label><input type="text" id="f-journal" value="${esc(a.journal)}"></div>
+      <div class="field"><label>Authors</label><input type="text" id="f-authors" value="${esc(a.authors)}"></div>
+    </div>
+    <div class="half">
+      <div class="field"><label>DOI</label><input type="text" id="f-doi" value="${esc(a.doi)}"></div>
+      <div class="field"><label>Original Link</label><input type="url" id="f-link" value="${esc(a.link)}"></div>
+    </div>
+    <div class="field"><label>Tags (comma-separated)</label><input type="text" id="f-tags" value="${esc((a.tags||[]).join(', '))}" placeholder="e.g. breast, prospective study"></div>
+    <div class="field"><label>Abstract</label><textarea id="f-abstract">${esc(a.abstract)}</textarea></div>
+    <div class="field"><label>Key Findings (one per line, leave empty to hide)</label><textarea id="f-findings" style="min-height:120px">${esc((a.findings||[]).join('\n'))}</textarea></div>
+    <div class="field"><label>Cover Image</label>
+      <div class="row">
+        <input type="url" id="f-cover" value="${esc(a.cover)}" placeholder="Image URL or click upload on the right" style="flex:1;min-width:200px">
+        <label class="btn btn-soft btn-sm" style="cursor:pointer">Upload Image<input type="file" accept="image/*" style="display:none" onchange="uploadCover(event)"></label>
+      </div>
+      <div class="help">Leave empty to use the default placeholder image.</div>
+      <div id="f-cover-prev">${coverPrev}</div>
+    </div>
+    <div class="field"><label>Article Images (multiple)</label>
+      <label class="btn btn-soft btn-sm" style="cursor:pointer">+ Add Images<input type="file" accept="image/*" multiple style="display:none" onchange="uploadGallery(event)"></label>
+      <div class="img-thumbs" id="f-gallery">${renderGalleryThumbs(curGallery)}</div>
+      <div class="help">Uploaded images are stored as base64. Keep each image under 1MB to avoid exceeding storage limits.</div>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <label class="chk"><input type="checkbox" id="f-featured" ${a.featured?'checked':''}> Mark as Featured</label>
+      <label class="chk"><input type="checkbox" id="f-visible" ${a.visible!==false?'checked':''}> Visible on site</label>
+    </div>`;
+  document.getElementById('editor-ov').classList.add('show');
+}
+function closeEditor(){document.getElementById('editor-ov').classList.remove('show');editingId=null;curGallery=[];}
+
+function renderGalleryThumbs(gal){return gal.map((g,idx)=>`<div class="th"><img src="${esc(g)}" onerror="this.style.opacity=.3"><button class="rm" onclick="rmGallery(${idx})">&times;</button></div>`).join('');}
+function refreshGallery(){document.getElementById('f-gallery').innerHTML=renderGalleryThumbs(curGallery);}
+function rmGallery(idx){curGallery.splice(idx,1);refreshGallery();}
+
+function uploadCover(e){
+  const f=e.target.files[0];if(!f)return;
+  if(f.size>1.5*1024*1024&&!confirm('This image is large ('+(f.size/1024/1024).toFixed(1)+'MB). It may exceed storage limits. Continue?'))return;
+  const r=new FileReader();r.onload=()=>{document.getElementById('f-cover').value=r.result;document.getElementById('f-cover-prev').innerHTML=`<img src="${r.result}" style="width:120px;height:80px;object-fit:cover;border-radius:8px;margin-top:8px;border:1px solid var(--line);display:block">`;};r.readAsDataURL(f);
+}
+function uploadGallery(e){
+  const files=[...e.target.files];let done=0;
+  files.forEach(f=>{
+    if(f.size>1.5*1024*1024){toast('Skipped large image: '+f.name);done++;return;}
+    const r=new FileReader();r.onload=()=>{curGallery.push(r.result);done++;if(done===files.length)refreshGallery();};r.readAsDataURL(f);
+  });
+  if(files.length===0)refreshGallery();
+}
+
+function saveArticle(){
+  const title=document.getElementById('f-title').value.trim();
+  if(!title){toast('Please enter a title');return;}
+  const isNew=!editingId;
+  const a=isNew?{id:uid('a')}:D.articles.find(x=>x.id===editingId);
+  a.title=title;
+  a.titleEn=val('f-titleEn');
+  a.catId=val('f-catId');
+  a.year=val('f-year');
+  a.journal=val('f-journal');
+  a.authors=val('f-authors');
+  a.doi=val('f-doi');
+  a.link=val('f-link');
+  a.tags=val('f-tags').split(/[,，、]/).map(x=>x.trim()).filter(Boolean);
+  a.abstract=val('f-abstract');
+  a.findings=val('f-findings').split('\n').map(x=>x.trim()).filter(Boolean);
+  a.cover=val('f-cover').trim();
+  a.gallery=curGallery.slice();
+  a.featured=document.getElementById('f-featured').checked;
+  a.visible=document.getElementById('f-visible').checked;
+  if(isNew)D.articles.push(a);
+  closeEditor();renderArticles();saveLocalSilent();toast('Saved: '+a.title);
+}
+function val(id){const el=document.getElementById(id);return el?el.value.trim():'';}
+
+function delArticle(id){const a=D.articles.find(x=>x.id===id);if(!a||!confirm('Delete article "'+a.title+'"?'))return;D.articles=D.articles.filter(x=>x.id!==id);renderArticles();saveLocalSilent();toast('Deleted');}
+function dupArticle(id){const a=D.articles.find(x=>x.id===id);if(!a)return;const c=clone(a);c.id=uid('a');c.title=a.title+' (Copy)';D.articles.push(c);renderArticles();saveLocalSilent();toast('Duplicated');}
+
+/* ---------- Data Storage ---------- */
+function saveLocalSilent(){try{localStorage.setItem(LS_KEY,JSON.stringify(D));}catch(e){toast('Storage failed (possibly exceeded limit). Please export the data file and reduce image sizes.');}}
+function saveLocal(){saveLocalSilent();toast('Saved to current browser. Click "View Site" to preview.');}
+function exportData(){
+  const txt='/* Site data file - exported from admin panel */\nwindow.SITE_DATA = '+JSON.stringify(D,null,2)+';\n';
+  const blob=new Blob([txt],{type:'text/javascript;charset=utf-8'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download='data.js';a.click();URL.revokeObjectURL(url);
+  toast('Exported data.js');
+}
+function importData(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=()=>{
+    let txt=r.result;
+    try{
+      let obj;
+      txt=txt.trim();
+      if(txt.startsWith('{')||txt.startsWith('['))obj=JSON.parse(txt);
+      else{const m=txt.match(/window\.SITE_DATA\s*=\s*(\{[\s\S]*\})\s*;?/);if(!m)throw 0;obj=JSON.parse(m[1]);}
+      if(!obj.settings)throw 0;
+      D=obj;localStorage.setItem(LS_KEY,JSON.stringify(D));
+      setAccent();renderAll();toast('Import successful');
+    }catch(err){toast('Parse failed: please select a valid data.js file');}
+  };r.readAsText(f);
+  e.target.value='';
+}
+function resetData(){
+  if(!confirm('Reset to default data? All current changes will be cleared.'))return;
+  D=getDefault();localStorage.removeItem(LS_KEY);
+  location.reload();
+}
+</script>
+</body>
+</html>
