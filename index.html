@@ -199,22 +199,25 @@ footer{background:#0c1c38;color:#aebcd6;padding:40px 0}
 <script>
 const LS_KEY='site_data_v2';
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function getData(){
-  try{const o=JSON.parse(localStorage.getItem(LS_KEY));if(o&&o.settings)return o;}catch(e){}
-  return (window.SITE_DATA||{settings:{},categories:[],articles:[]});
-}
-const D=getData();
-const s=D.settings||{};
-document.documentElement.style.setProperty('--accent',s.accent||'#1668dc');
-document.title=s.siteName||'My Library';
-document.getElementById('meta-desc').setAttribute('content',s.siteSub||'');
-document.getElementById('brand-name').textContent=s.siteName||'My Library';
-document.getElementById('brand-dot').textContent=(s.siteName||'U').charAt(0).toUpperCase();
-document.getElementById('footer-text').textContent=s.footerText||'';
-const fm=document.getElementById('footer-mail');
-if(s.contactEmail){fm.textContent=s.contactEmail;fm.href='mailto:'+s.contactEmail;}else{fm.style.display='none';}
-
+function getDataDefault(){return (window.SITE_DATA||{settings:{},categories:[],articles:[]});}
+/* persistence: IndexedDB with localStorage fallback (handles large image data) */
+function idbOpen(){return new Promise(function(res,rej){var r=indexedDB.open('site_db',1);r.onupgradeneeded=function(){r.result.createObjectStore('kv');};r.onsuccess=function(){res(r.result);};r.onerror=function(){rej(r.error);};});}
+function idbGet(k){return new Promise(function(res,rej){idbOpen().then(function(db){var tx=db.transaction('kv','readonly');var rq=tx.objectStore('kv').get(k);rq.onsuccess=function(){res(rq.result);};rq.onerror=function(){rej(rq.error);};}).catch(rej);});}
+function storeGet(){if(typeof indexedDB==='undefined'){try{var o=JSON.parse(localStorage.getItem(LS_KEY));if(o&&o.settings)return Promise.resolve(o);}catch(e){}return Promise.resolve(null);}return idbGet(LS_KEY).then(function(v){return v||null;}).catch(function(){return null;});}
+let D,s;
 let curCat='all', curQuery='';
+function applySettings(){
+  s=D.settings||{};
+  document.documentElement.style.setProperty('--accent',s.accent||'#1668dc');
+  document.title=s.siteName||'My Library';
+  document.getElementById('meta-desc').setAttribute('content',s.siteSub||'');
+  document.getElementById('brand-name').textContent=s.siteName||'My Library';
+  document.getElementById('brand-dot').textContent=(s.siteName||'U').charAt(0).toUpperCase();
+  document.getElementById('footer-text').textContent=s.footerText||'';
+  const fm=document.getElementById('footer-mail');
+  if(s.contactEmail){fm.textContent=s.contactEmail;fm.href='mailto:'+s.contactEmail;}else{fm.style.display='none';}
+}
+function init(data){D=data;applySettings();render();}
 
 function renderHero(){
   const stats=(s.stats||[]).map(st=>`<div class="stat"><div class="num">${esc(st.num)}</div><div class="lab">${esc(st.lab)}</div></div>`).join('');
@@ -339,7 +342,7 @@ const drawer=document.getElementById('drawer');
 document.getElementById('menu-btn').onclick=()=>drawer.classList.add('show');
 drawer.onclick=e=>{if(e.target.id==='drawer')drawer.classList.remove('show');};
 
-render();
+storeGet().then(function(o){init((o&&o.settings)?o:getDataDefault());}).catch(function(){init(getDataDefault());});
 </script>
 </body>
 </html>
