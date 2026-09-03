@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="description" id="meta-desc" content="Clinical Articles & Research Showcase">
 <title id="page-title">My Library</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231668dc'/%3E%3Ctext x='16' y='22' font-size='18' text-anchor='middle' fill='white'%3EU%3C/text%3E%3C/svg%3E">
@@ -365,19 +368,29 @@ document.getElementById('menu-btn').onclick=()=>drawer.classList.add('show');
 drawer.onclick=e=>{if(e.target.id==='drawer')drawer.classList.remove('show');};
 
 /* Robust init: render immediately with localStorage or default data,
-   then upgrade from IndexedDB if available. Prevents blank page on
-   mobile browsers where IndexedDB may hang or be blocked. */
-function tryLocalData(){try{var o=JSON.parse(localStorage.getItem(LS_KEY));if(o&&o.settings)return o;}catch(e){}return null;}
+   then upgrade from IndexedDB only if it's NEWER than the server data.
+   This prevents stale local data from overriding freshly published content. */
+function serverTS(){return (window.SITE_DATA&&window.SITE_DATA.lastSaved)||0;}
+function tryLocalData(){
+  try{
+    var o=JSON.parse(localStorage.getItem(LS_KEY));
+    if(o&&o.settings){
+      var lv=o.lastSaved||0;
+      if(lv>=serverTS())return o;  /* local is newer or same — use it */
+    }
+  }catch(e){}
+  return null;  /* fall back to server data */
+}
 var _local=tryLocalData();
 init(_local||getDataDefault());  /* render immediately — never blank */
 if(typeof indexedDB!=='undefined'){
-  var _idbTimer=setTimeout(function(){},0);
   idbGet(LS_KEY).then(function(v){
-    clearTimeout(_idbTimer);
-    if(v&&v.settings){init(v);}  /* upgrade to IndexedDB data if newer */
-  }).catch(function(){clearTimeout(_idbTimer);});
-  /* safety: if IDB hangs >3s, page already rendered — do nothing */
-  setTimeout(function(){},3000);
+    if(v&&v.settings){
+      var iv=v.lastSaved||0;
+      if(iv>=serverTS()){init(v);}  /* only upgrade if IDB is newer or same */
+    }
+  }).catch(function(){});
+  /* safety: if IDB hangs, page already rendered with server data */
 }
 </script>
 </body>
