@@ -88,10 +88,26 @@ button{font-family:inherit;cursor:pointer}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f1f3d;color:#fff;padding:11px 22px;border-radius:10px;font-size:14px;z-index:200;box-shadow:0 10px 30px rgba(0,0,0,.3);display:none}
 .toast.show{display:block}
 .empty{text-align:center;padding:30px;color:var(--sub)}
+.gal-layout{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.gal-layout label{font-size:13px;font-weight:600}
+.gal-layout select{padding:8px 12px;border:1.5px solid var(--line);border-radius:8px;outline:none}
+.gal-drop{border:2px dashed var(--line);border-radius:10px;padding:24px;text-align:center;color:var(--sub);margin-bottom:12px;cursor:pointer;transition:.15s}
+.gal-drop:hover,.gal-drop.over{border-color:var(--accent);background:var(--soft)}
+.gal-drop .ic{font-size:28px;margin-bottom:6px}
+.gal-edit-item{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;background:#fff;display:flex;gap:10px;align-items:flex-start}
+.gal-edit-item img{width:90px;height:auto;max-height:90px;object-fit:contain;border-radius:7px;border:1px solid var(--line);flex:none;background:var(--bg)}
+.gal-edit-item .gf{flex:1;min-width:0}
+.gal-edit-item .gf input{width:100%;padding:7px 10px;border:1.5px solid var(--line);border-radius:7px;margin-bottom:6px;font-size:13px;outline:none}
+.gal-edit-item .gf select{padding:6px 8px;border:1.5px solid var(--line);border-radius:7px;font-size:13px;outline:none}
+.gal-edit-item .gb{display:flex;flex-direction:column;gap:4px;flex:none}
+.gal-edit-item .gb button{padding:5px 8px;font-size:13px;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:pointer;line-height:1}
+.gal-edit-item .gb button:disabled{opacity:.3;cursor:default}
 @media(max-width:680px){
   .half{grid-template-columns:1fr}
   .topbar .wrap{height:auto;flex-direction:column;align-items:stretch;padding:10px 14px}
   .tabs{order:3}
+  .gal-edit-item{flex-direction:column}
+  .gal-edit-item img{width:100%;max-height:120px}
 }
 </style>
 </head>
@@ -158,7 +174,7 @@ button{font-family:inherit;cursor:pointer}
         <button class="btn btn-danger" onclick="resetData()">Reset to Default</button>
       </div>
       <div class="callout ok" style="margin-top:14px">
-        <b>Data structure:</b> Site data consists of settings (site settings), categories (category list), and articles (article list). Article fields include: title, English title, authors, journal, year, DOI, original link, category, tags, abstract, key findings, cover image, gallery images, featured flag, and visibility flag.
+        <b>Data structure:</b> Site data consists of settings, categories, and articles. Article fields: title, English title, authors, journal, year, DOI, link, category, tags, "What This Study Shows &amp; Clinical Significance" (abstract), Results (findings), cover image, gallery images (per-image caption + size + layout mode), featured flag, visibility flag.
       </div>
     </div>
   </div></div>
@@ -179,6 +195,7 @@ button{font-family:inherit;cursor:pointer}
 const LS_KEY='site_data_v2';
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function clone(o){return JSON.parse(JSON.stringify(o));}
+function normGal(gal){return(gal||[]).map(function(g){if(typeof g==='string')return{src:g,caption:'',size:'auto'};return{src:g.src||'',caption:g.caption||'',size:g.size||'auto'};});}
 function getDefault(){return window.SITE_DATA?clone(window.SITE_DATA):{settings:{},categories:[],articles:[]};}
 /* persistence: IndexedDB with localStorage fallback (handles large image data) */
 function idbOpen(){return new Promise(function(res,rej){var r=indexedDB.open('site_db',1);r.onupgradeneeded=function(){r.result.createObjectStore('kv');};r.onsuccess=function(){res(r.result);};r.onerror=function(){rej(r.error);};});}
@@ -356,7 +373,7 @@ function moveCat(i,dir){
 function editArticle(id){
   editingId=id||null;
   const a=id?D.articles.find(x=>x.id===id):{title:'',titleEn:'',authors:'',journal:'',year:'',doi:'',link:'',catId:(D.categories[0]||{}).id||'',tags:[],abstract:'',findings:[],cover:'',gallery:[],featured:false,visible:true};
-  curGallery=clone(a.gallery||[]);
+  curGallery=normGal(a.gallery||[]);
   const catOpts=D.categories.map(c=>`<option value="${esc(c.id)}" ${c.id===a.catId?'selected':''}>${esc(c.name)}</option>`).join('');
   const coverPrev=a.cover?`<img src="${esc(a.cover)}" style="width:120px;height:80px;object-fit:cover;border-radius:8px;margin-top:8px;border:1px solid var(--line);display:block">`:'';
   document.getElementById('editor-title').textContent=id?'Edit Article':'New Article';
@@ -376,8 +393,8 @@ function editArticle(id){
       <div class="field"><label>Original Link</label><input type="url" id="f-link" value="${esc(a.link)}"></div>
     </div>
     <div class="field"><label>Tags (comma-separated)</label><input type="text" id="f-tags" value="${esc((a.tags||[]).join(', '))}" placeholder="e.g. breast, prospective study"></div>
-    <div class="field"><label>Abstract</label><textarea id="f-abstract">${esc(a.abstract)}</textarea></div>
-    <div class="field"><label>Key Findings (one per line, leave empty to hide)</label><textarea id="f-findings" style="min-height:120px">${esc((a.findings||[]).join('\n'))}</textarea></div>
+    <div class="field"><label>What This Study Shows &amp; Clinical Significance</label><textarea id="f-abstract" style="min-height:120px">${esc(a.abstract)}</textarea></div>
+    <div class="field"><label>Results (one per line, leave empty to hide)</label><textarea id="f-findings" style="min-height:120px">${esc((a.findings||[]).join('\n'))}</textarea></div>
     <div class="field"><label>Cover Image</label>
       <div class="row">
         <input type="url" id="f-cover" value="${esc(a.cover)}" placeholder="Image URL or click upload on the right" style="flex:1;min-width:200px">
@@ -386,10 +403,22 @@ function editArticle(id){
       <div class="help">Leave empty to use the default placeholder image.</div>
       <div id="f-cover-prev">${coverPrev}</div>
     </div>
-    <div class="field"><label>Article Images (multiple)</label>
-      <label class="btn btn-soft btn-sm" style="cursor:pointer">+ Add Images<input type="file" accept="image/*" multiple style="display:none" onchange="uploadGallery(event)"></label>
-      <div class="img-thumbs" id="f-gallery">${renderGalleryThumbs(curGallery)}</div>
-      <div class="help">Images are auto-compressed (max 1600px, JPEG quality 85%) and stored as base64.</div>
+    <div class="field"><label>Article Images</label>
+      <div class="gal-layout"><label>Layout:</label>
+        <select id="f-galLayout">
+          <option value="auto" ${(!a.galleryLayout||a.galleryLayout==='auto')?'selected':''}>Auto Grid (per-image size)</option>
+          <option value="single" ${a.galleryLayout==='single'?'selected':''}>Single Column (full width)</option>
+          <option value="two" ${a.galleryLayout==='two'?'selected':''}>Two Columns</option>
+          <option value="three" ${a.galleryLayout==='three'?'selected':''}>Three Columns</option>
+        </select>
+      </div>
+      <div class="gal-drop" id="gal-drop" onclick="document.getElementById('gal-file-input').click()">
+        <div class="ic">&#128249;</div>
+        <div><b>Click or drag images here to upload</b></div>
+        <div style="font-size:12px;margin-top:4px">Auto-compressed (max 1600px, JPEG 85%). No aspect ratio limits.</div>
+        <input type="file" id="gal-file-input" accept="image/*" multiple style="display:none" onchange="uploadGallery(event)">
+      </div>
+      <div id="f-gallery">${renderGalleryEditor(curGallery)}</div>
     </div>
     <div class="row" style="margin-top:6px">
       <label class="chk"><input type="checkbox" id="f-featured" ${a.featured?'checked':''}> Mark as Featured</label>
@@ -399,9 +428,27 @@ function editArticle(id){
 }
 function closeEditor(){document.getElementById('editor-ov').classList.remove('show');editingId=null;curGallery=[];}
 
-function renderGalleryThumbs(gal){return gal.map((g,idx)=>`<div class="th"><img src="${esc(g)}" onerror="this.style.opacity=.3"><button class="rm" onclick="rmGallery(${idx})">&times;</button></div>`).join('');}
-function refreshGallery(){document.getElementById('f-gallery').innerHTML=renderGalleryThumbs(curGallery);}
+function renderGalleryEditor(gal){return gal.map(function(g,idx){return '<div class="gal-edit-item">'+
+  '<img src="'+esc(g.src)+'" onerror="this.style.opacity=.3">'+
+  '<div class="gf">'+
+    '<input type="text" placeholder="Caption (optional)" value="'+esc(g.caption)+'" oninput="curGallery['+idx+'].caption=this.value">'+
+    '<select onchange="curGallery['+idx+'].size=this.value">'+
+      '<option value="auto"'+(g.size==='auto'?' selected':'')+'>Auto Size</option>'+
+      '<option value="small"'+(g.size==='small'?' selected':'')+'>Small (1/3 width)</option>'+
+      '<option value="medium"'+(g.size==='medium'?' selected':'')+'>Medium (1/2 width)</option>'+
+      '<option value="large"'+(g.size==='large'?' selected':'')+'>Large (2/3 width)</option>'+
+      '<option value="full"'+(g.size==='full'?' selected':'')+'>Full Width</option>'+
+    '</select>'+
+  '</div>'+
+  '<div class="gb">'+
+    '<button onclick="moveGal('+idx+',-1)" '+(idx===0?'disabled':'')+'>\u2191</button>'+
+    '<button onclick="moveGal('+idx+',1)" '+(idx===gal.length-1?'disabled':'')+'>\u2193</button>'+
+    '<button onclick="rmGallery('+idx+')" style="color:var(--danger)">\u2715</button>'+
+  '</div>'+
+'</div>';}).join('');}
+function refreshGallery(){document.getElementById('f-gallery').innerHTML=renderGalleryEditor(curGallery);}
 function rmGallery(idx){curGallery.splice(idx,1);refreshGallery();}
+function moveGal(idx,dir){var j=idx+dir;if(j<0||j>=curGallery.length)return;var t=curGallery[idx];curGallery[idx]=curGallery[j];curGallery[j]=t;refreshGallery();}
 
 function compressImage(file,maxDim,quality,cb){
   if(!/^image\//.test(file.type)){const r=new FileReader();r.onload=()=>cb(r.result);r.readAsDataURL(file);return;}
@@ -428,15 +475,34 @@ function uploadCover(e){
   e.target.value='';
 }
 function uploadGallery(e){
-  const files=[...e.target.files];let done=0;
+  var files=[].slice.call(e.target.files||[]);var done=0;
   if(files.length===0)return;
-  files.forEach(f=>{
+  files.forEach(function(f){
     compressImage(f,1600,0.85,function(data){
-      curGallery.push(data);done++;if(done===files.length)refreshGallery();
+      curGallery.push({src:data,caption:'',size:'auto'});done++;if(done===files.length)refreshGallery();
     });
   });
   e.target.value='';
 }
+/* drag-drop file upload on drop zone */
+(function(){
+  document.addEventListener('DOMContentLoaded',function(){
+    var dz=document.getElementById('gal-drop');
+    if(!dz)return;
+    dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('over');});
+    dz.addEventListener('dragleave',function(){dz.classList.remove('over');});
+    dz.addEventListener('drop',function(e){
+      e.preventDefault();dz.classList.remove('over');
+      var files=[].slice.call(e.dataTransfer.files).filter(function(f){return /^image\//.test(f.type);});
+      var done=0;
+      files.forEach(function(f){
+        compressImage(f,1600,0.85,function(data){
+          curGallery.push({src:data,caption:'',size:'auto'});done++;if(done===files.length)refreshGallery();
+        });
+      });
+    });
+  });
+})();
 function uploadHeroImg(e){
   const f=e.target.files[0];if(!f)return;
   compressImage(f,1920,0.85,function(data){
@@ -471,7 +537,8 @@ function saveArticle(){
   a.abstract=val('f-abstract');
   a.findings=val('f-findings').split('\n').map(x=>x.trim()).filter(Boolean);
   a.cover=val('f-cover').trim();
-  a.gallery=curGallery.slice();
+  a.gallery=clone(curGallery);
+  a.galleryLayout=val('f-galLayout');
   a.featured=document.getElementById('f-featured').checked;
   a.visible=document.getElementById('f-visible').checked;
   if(isNew)D.articles.push(a);
