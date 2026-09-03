@@ -164,8 +164,7 @@ button{font-family:inherit;cursor:pointer}
     <div class="section-head"><h2>Data Management</h2></div>
     <div class="card">
       <div class="callout info">
-        <b>How it works:</b> All changes made in this admin panel are saved to your <b>current browser</b> by default. Click "View Site" to preview instantly.<br>
-        To make changes visible to <b>all visitors</b>, click "Export data.js" and replace the file on the server (or redeploy).
+        <b>How it works:</b> All changes are saved to your <b>current browser</b> by default. To make changes visible to <b>all visitors</b> (including mobile), use the "Publish Data to GitHub" button below — it pushes your data directly to the server, no file download needed.
       </div>
       <div class="row" style="margin-top:10px">
         <button class="btn btn-pri" onclick="saveLocal()">Save to Browser (Preview)</button>
@@ -176,6 +175,25 @@ button{font-family:inherit;cursor:pointer}
       <div class="callout ok" style="margin-top:14px">
         <b>Data structure:</b> Site data consists of settings, categories, and articles. Article fields: title, English title, authors, journal, year, DOI, link, category, tags, "What This Study Shows &amp; Clinical Significance" (abstract), Results (findings), cover image, gallery images (per-image caption + size + layout mode), featured flag, visibility flag.
       </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3 style="font-size:17px;margin-bottom:6px">Publish to GitHub</h3>
+      <p style="color:var(--sub);font-size:13.5px;margin-bottom:14px">Push your data directly to the GitHub repository. No file download needed — your data goes straight from this browser to the server.</p>
+      <div class="field">
+        <label>GitHub Token</label>
+        <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxx" style="width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;outline:none">
+        <div class="help">Create at: GitHub Settings -> Developer settings -> Personal access tokens -> Tokens (classic) -> Generate new token, select "repo" scope.</div>
+      </div>
+      <div class="half">
+        <div class="field"><label>Repo Owner (username)</label><input type="text" id="gh-owner" placeholder="DrQinLLLLL" style="width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;outline:none"></div>
+        <div class="field"><label>Repo Name</label><input type="text" id="gh-repo" placeholder="repo-name" style="width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;outline:none"></div>
+      </div>
+      <div class="half">
+        <div class="field"><label>Branch</label><input type="text" id="gh-branch" value="main" style="width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;outline:none"></div>
+        <div class="field"><label>File Path</label><input type="text" id="gh-path" value="data.js" style="width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;outline:none"></div>
+      </div>
+      <button class="btn btn-pri" id="gh-publish-btn" onclick="publishToGitHub()" style="width:100%;justify-content:center;margin-top:4px">Publish Data to GitHub</button>
+      <div id="gh-status" style="margin-top:10px;font-size:13px"></div>
     </div>
   </div></div>
 </div>
@@ -231,6 +249,7 @@ function enterApp(){
   document.getElementById('b-name').textContent=(D.settings.siteName||'Admin')+' \u00b7 Admin';
   document.getElementById('b-dot').textContent=(D.settings.siteName||'U').charAt(0).toUpperCase();
   renderAll();
+  loadGitHubConfig();
 }
 if(sessionStorage.getItem('admin_ok')==='1'){storeGet().then(function(o){if(o&&o.settings)D=o;enterApp();}).catch(function(){enterApp();});}
 
@@ -584,6 +603,60 @@ function resetData(){
   D=getDefault();
   if(typeof indexedDB!=='undefined'){idbDel(LS_KEY).then(function(){location.reload();}).catch(function(){location.reload();});}
   else{try{localStorage.removeItem(LS_KEY);}catch(e){}location.reload();}
+}
+
+/* ---------- GitHub Publishing ---------- */
+var GH_KEY='github_config_v1';
+function loadGitHubConfig(){
+  idbGet(GH_KEY).then(function(cfg){
+    if(!cfg)return;
+    var el;
+    if(cfg.token&&(el=document.getElementById('gh-token')))el.value=cfg.token;
+    if(cfg.owner&&(el=document.getElementById('gh-owner')))el.value=cfg.owner;
+    if(cfg.repo&&(el=document.getElementById('gh-repo')))el.value=cfg.repo;
+    if(cfg.branch&&(el=document.getElementById('gh-branch')))el.value=cfg.branch;
+    if(cfg.path&&(el=document.getElementById('gh-path')))el.value=cfg.path;
+  }).catch(function(){});
+}
+function saveGitHubConfig(){
+  var cfg={token:val('gh-token'),owner:val('gh-owner'),repo:val('gh-repo'),branch:val('gh-branch'),path:val('gh-path')};
+  idbPut(GH_KEY,cfg).catch(function(){});
+}
+function utf8ToBase64(str){
+  var bytes=new TextEncoder().encode(str);
+  var binary='';
+  for(var i=0;i<bytes.length;i++)binary+=String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+function publishToGitHub(){
+  var token=val('gh-token'),owner=val('gh-owner'),repo=val('gh-repo');
+  var branch=val('gh-branch')||'main',path=val('gh-path')||'data.js';
+  if(!token||!owner||!repo){toast('Please fill in token, owner, and repo name');return;}
+  saveGitHubConfig();
+  var btn=document.getElementById('gh-publish-btn');
+  var st=document.getElementById('gh-status');
+  btn.disabled=true;btn.textContent='Publishing...';
+  st.innerHTML='<span style="color:var(--warn)">Uploading data to GitHub...</span>';
+  var content='/* Site data file - published from admin panel */\nwindow.SITE_DATA='+JSON.stringify(D,null,2)+';\n';
+  var b64=utf8ToBase64(content);
+  var apiUrl='https://api.github.com/repos/'+owner+'/'+repo+'/contents/'+path+'?ref='+encodeURIComponent(branch);
+  fetch(apiUrl,{headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'}})
+  .then(function(r){if(r.status===404)return null;if(!r.ok)throw new Error('Failed to get file info (HTTP '+r.status+')');return r.json();})
+  .then(function(data){
+    var sha=data?data.sha:null;
+    return fetch(apiUrl,{method:'PUT',headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','Content-Type':'application/json'},
+      body:JSON.stringify({message:'Update site data from admin panel',content:b64,sha:sha,branch:branch})});
+  })
+  .then(function(r){if(!r.ok)return r.json().then(function(d){throw new Error((d.message||'Publish failed')+' (HTTP '+r.status+')')});return r.json();})
+  .then(function(){
+    btn.disabled=false;btn.textContent='Publish Data to GitHub';
+    st.innerHTML='<span style="color:#15643a">&#10003; Published successfully! Changes will be live on all devices in 1-2 minutes.</span>';
+    toast('Published to GitHub!');
+  })
+  .catch(function(err){
+    btn.disabled=false;btn.textContent='Publish Data to GitHub';
+    st.innerHTML='<span style="color:var(--danger)">&#10007; '+err.message+'</span>';
+  });
 }
 </script>
 </body>
