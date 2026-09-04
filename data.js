@@ -89,11 +89,11 @@ window.SITE_DATA={
       "title": "A reproducible ultrasound localization microscopy framework for the quantitative imaging of hepatocellular carcinoma on a clinical ultrasound system",
       "titleEn": "",
       "catId": "cmtl5c38opha",
-      "year": "",
-      "journal": "",
-      "authors": "",
-      "doi": "",
-      "link": "",
+      "year": "2026",
+      "journal": "Theranostics",
+      "authors": "Peking Union Medical College Hospital",
+      "doi": "10.7150/thno.133561",
+      "link": "https://www.thno.org/v16p8230.htm",
       "tags": [],
       "abstract": "What This Study Shows & Clinical Significance\n\nHCC grade and microvascular invasion (MVI) are normally confirmed only after surgery. \n\nThis URM framework predicted both preoperatively using microvascular morphology — turning standard contrast ultrasound into a non-invasive biomarker for tumor grade and MVI risk. \n\nIt runs on a clinical ultrasound system with high reproducibility, supporting routine preoperative planning and personalized treatment decisions.",
       "findings": [
@@ -114,5 +114,5 @@ window.SITE_DATA={
       "galleryLayout": "auto"
     }
   ],
-  "lastSaved": 1788427167504
+  "lastSaved": 1788482361202
 };
