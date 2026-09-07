@@ -24,7 +24,7 @@ header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.9);backdrop
 .nav{display:flex;align-items:center;justify-content:space-between;height:62px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}
 .brand .dot{height:38px;padding:0 6px;display:grid;place-items:center;flex:none}
-.brand .dot img{height:36px;width:auto;display:block}
+.brand .dot img{display:block;width:auto;object-fit:contain}
 .nav-links{display:flex;gap:6px;align-items:center}
 .nav-links a{padding:8px 14px;border-radius:9px;font-size:15px;color:var(--sub);font-weight:500}
 .nav-links a:hover{background:var(--soft);color:var(--ink)}
@@ -42,8 +42,8 @@ header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.9);backdrop
 .hero p{margin-top:18px;font-size:clamp(15px,2.4vw,18px);opacity:.92;max-width:740px;white-space:pre-wrap}
 .hero .hero-sub{margin-top:16px;font-weight:600;font-size:clamp(16px,2.6vw,20px);opacity:.95;max-width:780px;white-space:pre-wrap}
 .hero.has-img::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,18,42,.5),rgba(6,18,42,.64));z-index:0}
-.hero-urm{position:absolute;top:24px;right:32px;z-index:2;height:48px;width:auto;filter:drop-shadow(0 4px 12px rgba(0,0,0,.35))}
-@media (max-width:640px){.hero-urm{top:16px;right:18px;height:34px}}
+.hero-urm{position:absolute;top:24px;right:32px;z-index:2;height:var(--urm-h,48px);width:auto;filter:drop-shadow(0 4px 12px rgba(0,0,0,.35));transform-origin:top right}
+@media (max-width:640px){.hero-urm{top:16px;right:18px;transform:scale(.7)}}
 .hero-actions{margin-top:30px;display:flex;gap:14px;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:11px;font-weight:600;font-size:15px;cursor:pointer;border:none;transition:transform .15s,box-shadow .15s}
 .btn:active{transform:translateY(1px)}
@@ -198,7 +198,7 @@ body.locked header,body.locked main,body.locked footer,body.locked .admin-fab,bo
 
 <header>
   <div class="wrap nav">
-    <a href="#home" class="brand"><span class="dot" id="brand-dot"><img src="assets/vinno-logo.png" alt="VINNO"></span><span id="brand-name">My Library</span></a>
+    <a href="#home" class="brand"><span class="dot" id="brand-dot"></span><span id="brand-name">My Library</span></a>
     <nav class="nav-links" id="nav-links">
       <a href="#home">Home</a>
       <a href="#intro">About</a>
@@ -256,6 +256,18 @@ function applySettings(){
   document.title=s.siteName||'My Library';
   document.getElementById('meta-desc').setAttribute('content',s.siteSub||'');
   document.getElementById('brand-name').textContent=s.siteName||'My Library';
+  /* logos: settings override defaults; size in px (height) */
+  var brandUrl=s.brandLogo||'assets/vinno-logo.png';
+  var brandH=Number(s.brandLogoSize)||36;
+  var brandEl=document.getElementById('brand-dot');
+  if(brandEl)brandEl.innerHTML='<img src="'+String(brandUrl).replace(/"/g,'&quot;')+'" alt="Brand" style="height:'+brandH+'px">';
+  var urmEl=document.getElementById('hero-urm-img');
+  if(urmEl){
+    var urmUrl=s.urmLogo||'assets/urm-logo.png';
+    var urmH=Number(s.urmLogoSize)||48;
+    urmEl.src=urmUrl;
+    urmEl.style.setProperty('--urm-h',urmH+'px');
+  }
   document.getElementById('footer-text').textContent=s.footerText||'';
   const fm=document.getElementById('footer-mail');
   if(s.contactEmail){fm.textContent=s.contactEmail;fm.href='mailto:'+s.contactEmail;}else{fm.style.display='none';}
@@ -305,7 +317,7 @@ function renderHero(){
       <a class="btn btn-ghost" href="admin.html">Admin Panel</a>
     </div>
     ${stats?`<div class="stats">${stats}</div>`:''}
-  </div><img class="hero-urm" src="assets/urm-logo.png" alt="URM"></section>`;
+  </div><img class="hero-urm" id="hero-urm-img" alt="URM"></section>`;
 }
 function renderIntro(){
   if(s.showIntro===false)return '';
