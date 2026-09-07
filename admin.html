@@ -311,6 +311,32 @@ function renderSettings(){
   const s=D.settings;
   document.getElementById('settings-form').innerHTML=`
     <div class="field"><label>Site Name</label><input type="text" data-k="siteName" value="${esc(s.siteName||'')}"></div>
+    <div class="field"><label>Brand Logo (top-left header)</label>
+      <div class="row">
+        <input type="url" data-k="brandLogo" id="f-brandLogo" value="${esc(s.brandLogo||'')}" placeholder="Image URL, or click Upload (leave empty to use default)" style="flex:1;min-width:200px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;outline:none">
+        <label class="btn btn-soft btn-sm" style="cursor:pointer">Upload Logo<input type="file" accept="image/*" style="display:none" onchange="uploadBrandLogo(event)"></label>
+        <button class="btn btn-danger btn-sm" onclick="clearBrandLogo()">Remove</button>
+      </div>
+      <div class="row" style="margin-top:8px;align-items:center">
+        <label style="font-size:13px;color:var(--sub);min-width:120px">Height (px):</label>
+        <input type="number" data-k="brandLogoSize" id="f-brandLogoSize" value="${esc(s.brandLogoSize||36)}" min="16" max="120" step="1" style="width:90px;padding:7px 10px;border:1.5px solid var(--line);border-radius:8px;outline:none">
+        <span class="help" style="margin-left:8px">Recommended: 28-48px. Default: 36px.</span>
+      </div>
+      <div id="brand-logo-prev">${s.brandLogo?`<img src="${esc(s.brandLogo)}" onerror="this.style.display='none'" style="height:${Number(s.brandLogoSize)||36}px;width:auto;object-fit:contain;background:#f3f5f9;padding:6px;border-radius:8px;margin-top:8px;border:1px solid var(--line);display:block">`:''}</div>
+    </div>
+    <div class="field"><label>URM Logo (top-right of hero)</label>
+      <div class="row">
+        <input type="url" data-k="urmLogo" id="f-urmLogo" value="${esc(s.urmLogo||'')}" placeholder="Image URL, or click Upload (leave empty to use default)" style="flex:1;min-width:200px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;outline:none">
+        <label class="btn btn-soft btn-sm" style="cursor:pointer">Upload Logo<input type="file" accept="image/*" style="display:none" onchange="uploadUrmLogo(event)"></label>
+        <button class="btn btn-danger btn-sm" onclick="clearUrmLogo()">Remove</button>
+      </div>
+      <div class="row" style="margin-top:8px;align-items:center">
+        <label style="font-size:13px;color:var(--sub);min-width:120px">Height (px):</label>
+        <input type="number" data-k="urmLogoSize" id="f-urmLogoSize" value="${esc(s.urmLogoSize||48)}" min="16" max="160" step="1" style="width:90px;padding:7px 10px;border:1.5px solid var(--line);border-radius:8px;outline:none">
+        <span class="help" style="margin-left:8px">Recommended: 32-72px. Default: 48px.</span>
+      </div>
+      <div id="urm-logo-prev" style="background:linear-gradient(135deg,#0b2e5b,#1668dc 60%,#1f86d8);padding:14px;border-radius:8px;display:inline-block;margin-top:8px;border:1px solid var(--line)">${s.urmLogo?`<img src="${esc(s.urmLogo)}" onerror="this.style.display='none'" style="height:${Number(s.urmLogoSize)||48}px;width:auto;object-fit:contain;display:block">`:'<span style="color:#fff;font-size:13px;opacity:.85">(Using default logo on dark hero background)</span>'}</div>
+    </div>
     <div class="field"><label>Subtitle</label><textarea data-k="siteSub" style="min-height:96px" placeholder="Shown under the hero title. Press Enter to start a new line.">${esc(s.siteSub||'')}</textarea><div class="help">Multi-line supported. Line breaks will be preserved on the site.</div></div>
     <div class="half">
       <div class="field"><label>Theme Color</label><div class="color-pick"><input type="color" data-k="accent" value="${esc(s.accent||'#1668dc')}"><span class="cv" style="font-size:13px;color:var(--sub)">${esc(s.accent||'#1668dc')}</span></div></div>
@@ -547,6 +573,65 @@ function clearHeroImg(){
   const pv=document.getElementById('hero-img-prev');if(pv)pv.innerHTML='';
   saveLocalSilent();toast('Hero background image removed');
 }
+function refreshBrandLogoPrev(){
+  const url=D.settings.brandLogo||'';
+  const size=Number(D.settings.brandLogoSize)||36;
+  const pv=document.getElementById('brand-logo-prev');
+  if(pv)pv.innerHTML=url?`<img src="${url.replace(/"/g,'&quot;')}" onerror="this.style.display='none'" style="height:${size}px;width:auto;object-fit:contain;background:#f3f5f9;padding:6px;border-radius:8px;margin-top:8px;border:1px solid var(--line);display:block">`:'';
+}
+function refreshUrmLogoPrev(){
+  const url=D.settings.urmLogo||'';
+  const size=Number(D.settings.urmLogoSize)||48;
+  const pv=document.getElementById('urm-logo-prev');
+  if(pv)pv.innerHTML=url?`<img src="${url.replace(/"/g,'&quot;')}" onerror="this.style.display='none'" style="height:${size}px;width:auto;object-fit:contain;display:block">`:'<span style="color:#fff;font-size:13px;opacity:.85">(Using default logo on dark hero background)</span>';
+}
+function uploadBrandLogo(e){
+  const f=e.target.files[0];if(!f)return;
+  compressImage(f,600,0.95,function(data){
+    D.settings.brandLogo=data;
+    D.settings.brandLogoSize=Number(D.settings.brandLogoSize)||36;
+    const inp=document.getElementById('f-brandLogo');if(inp)inp.value=data;
+    const sz=document.getElementById('f-brandLogoSize');if(sz)sz.value=D.settings.brandLogoSize;
+    refreshBrandLogoPrev();
+    saveLocalSilent();toast('Brand logo set');
+  });
+  e.target.value='';
+}
+function clearBrandLogo(){
+  D.settings.brandLogo='';
+  const inp=document.getElementById('f-brandLogo');if(inp)inp.value='';
+  refreshBrandLogoPrev();
+  saveLocalSilent();toast('Brand logo removed (default will be used)');
+}
+function uploadUrmLogo(e){
+  const f=e.target.files[0];if(!f)return;
+  compressImage(f,800,0.95,function(data){
+    D.settings.urmLogo=data;
+    D.settings.urmLogoSize=Number(D.settings.urmLogoSize)||48;
+    const inp=document.getElementById('f-urmLogo');if(inp)inp.value=data;
+    const sz=document.getElementById('f-urmLogoSize');if(sz)sz.value=D.settings.urmLogoSize;
+    refreshUrmLogoPrev();
+    saveLocalSilent();toast('URM logo set');
+  });
+  e.target.value='';
+}
+function clearUrmLogo(){
+  D.settings.urmLogo='';
+  const inp=document.getElementById('f-urmLogo');if(inp)inp.value='';
+  refreshUrmLogoPrev();
+  saveLocalSilent();toast('URM logo removed (default will be used)');
+}
+/* live preview when size input changes */
+document.addEventListener('input',function(e){
+  if(!e.target||!e.target.id)return;
+  if(e.target.id==='f-brandLogoSize'){
+    const v=Math.max(16,Math.min(120,Number(e.target.value)||36));
+    D.settings.brandLogoSize=v;e.target.value=v;refreshBrandLogoPrev();saveLocalSilent();
+  }else if(e.target.id==='f-urmLogoSize'){
+    const v=Math.max(16,Math.min(160,Number(e.target.value)||48));
+    D.settings.urmLogoSize=v;e.target.value=v;refreshUrmLogoPrev();saveLocalSilent();
+  }
+});
 
 function saveArticle(){
   const title=document.getElementById('f-title').value.trim();
