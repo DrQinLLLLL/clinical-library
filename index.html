@@ -9,7 +9,7 @@
 <meta name="description" id="meta-desc" content="Clinical Articles & Research Showcase">
 <title id="page-title">My Library</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231668dc'/%3E%3Ctext x='16' y='22' font-size='18' text-anchor='middle' fill='white'%3EU%3C/text%3E%3C/svg%3E">
-<script src="data.js?v=1788767113046"></script>
+<script src="data.js?v=1788482376491"></script>
 <style>
 :root{--accent:#1668dc;--ink:#0f1f3d;--sub:#54627a;--line:#e6ebf2;--bg:#f6f8fc;--card:#ffffff;--soft:#eef3fb;}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -256,18 +256,14 @@ function applySettings(){
   document.title=s.siteName||'My Library';
   document.getElementById('meta-desc').setAttribute('content',s.siteSub||'');
   document.getElementById('brand-name').textContent=s.siteName||'My Library';
-  /* logos: settings override defaults; size in px (height) */
+  /* logos: settings override defaults; size in px (height).
+     brand-dot is static HTML so we can set it here.
+     hero-urm-img is rendered by renderHero() with src already inlined,
+     so it does not need to be touched here. */
   var brandUrl=s.brandLogo||'assets/vinno-logo.png';
   var brandH=Number(s.brandLogoSize)||36;
   var brandEl=document.getElementById('brand-dot');
   if(brandEl)brandEl.innerHTML='<img src="'+String(brandUrl).replace(/"/g,'&quot;')+'" alt="Brand" style="height:'+brandH+'px">';
-  var urmEl=document.getElementById('hero-urm-img');
-  if(urmEl){
-    var urmUrl=s.urmLogo||'assets/urm-logo.png';
-    var urmH=Number(s.urmLogoSize)||48;
-    urmEl.src=urmUrl;
-    urmEl.style.setProperty('--urm-h',urmH+'px');
-  }
   document.getElementById('footer-text').textContent=s.footerText||'';
   const fm=document.getElementById('footer-mail');
   if(s.contactEmail){fm.textContent=s.contactEmail;fm.href='mailto:'+s.contactEmail;}else{fm.style.display='none';}
@@ -308,6 +304,10 @@ function renderHero(){
   const hasImg=!!s.heroImage;
   const bg=hasImg?` style="background-image:url('${String(s.heroImage).replace(/'/g,'%27')}');background-size:cover;background-position:center"`:'';
   const sub=s.siteSub?`<p class="hero-sub">${esc(s.siteSub)}</p>`:'';
+  /* URM logo: render with src inline (defense-in-depth vs applySettings timing) */
+  const urmUrl=s.urmLogo||'assets/urm-logo.png';
+  const urmH=Number(s.urmLogoSize)||48;
+  const urmSrc=String(urmUrl).replace(/"/g,'&quot;');
   return `<section class="hero${hasImg?' has-img':''}" id="home"${bg}><div class="wrap">
     <h1>${esc(s.heroTitle||'')}</h1>
     ${sub}
@@ -317,7 +317,7 @@ function renderHero(){
       <a class="btn btn-ghost" href="admin.html">Admin Panel</a>
     </div>
     ${stats?`<div class="stats">${stats}</div>`:''}
-  </div><img class="hero-urm" id="hero-urm-img" alt="URM"></section>`;
+  </div><img class="hero-urm" id="hero-urm-img" src="${urmSrc}" alt="URM" style="--urm-h:${urmH}px"></section>`;
 }
 function renderIntro(){
   if(s.showIntro===false)return '';
