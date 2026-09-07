@@ -259,8 +259,11 @@ function applySettings(){
   /* logos: settings override defaults; size in px (height).
      brand-dot is static HTML so we can set it here.
      hero-urm-img is rendered by renderHero() with src already inlined,
-     so it does not need to be touched here. */
-  var brandUrl=s.brandLogo||'assets/vinno-logo.png';
+     so it does not need to be touched here.
+     JPEG logo = no alpha channel (black/white box) -> ignore & fall back. */
+  var b=s.brandLogo||'';
+  if(b&&/^data:image\/jpeg/.test(b))b='';
+  var brandUrl=b||'assets/vinno-logo.png';
   var brandH=Number(s.brandLogoSize)||36;
   var brandEl=document.getElementById('brand-dot');
   if(brandEl)brandEl.innerHTML='<img src="'+String(brandUrl).replace(/"/g,'&quot;')+'" alt="Brand" style="height:'+brandH+'px">';
@@ -304,8 +307,11 @@ function renderHero(){
   const hasImg=!!s.heroImage;
   const bg=hasImg?` style="background-image:url('${String(s.heroImage).replace(/'/g,'%27')}');background-size:cover;background-position:center"`:'';
   const sub=s.siteSub?`<p class="hero-sub">${esc(s.siteSub)}</p>`:'';
-  /* URM logo: render with src inline (defense-in-depth vs applySettings timing) */
-  const urmUrl=s.urmLogo||'assets/urm-logo.png';
+  /* URM logo: render with src inline (defense-in-depth vs applySettings timing).
+     JPEG logo = no alpha (black box) -> fall back to transparent default. */
+  var urm=s.urmLogo||'';
+  if(urm&&/^data:image\/jpeg/.test(urm))urm='';
+  const urmUrl=urm||'assets/urm-logo.png';
   const urmH=Number(s.urmLogoSize)||48;
   const urmSrc=String(urmUrl).replace(/"/g,'&quot;');
   return `<section class="hero${hasImg?' has-img':''}" id="home"${bg}><div class="wrap">
